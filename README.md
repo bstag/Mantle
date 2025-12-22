@@ -14,6 +14,7 @@ Part of the **Stagware** product suite, Mantle treats branding as a regal "coat"
 *   **Variations**: Automatically produces simplified, monochrome (ink stamp), and outline versions of your logos.
 *   **The Mantle Steward**: An embedded AI consultant that offers advice on brand usage and strategy.
 *   **Export**: Download a PDF Brand Guide or a full ZIP package containing all assets and code snippets.
+*   **Bring Your Own Key (BYOK)**: Securely authenticates using your own Google Gemini API key. Keys are stored locally in your browser and are never sent to a backend server.
 
 ## Technologies
 
@@ -36,31 +37,19 @@ Part of the **Stagware** product suite, Mantle treats branding as a regal "coat"
     npm install
     ```
 
-3.  **Configure Environment**
-    Create a `.env` file in the root directory based on the example.
-    ```bash
-    cp .env.example .env
-    ```
-
-4.  **Add API Key**
-    Get your API key from [Google AI Studio](https://aistudio.google.com/).
-    Edit `.env` and add your key:
-    ```env
-    API_KEY=your_actual_api_key_here
-    ```
-
-5.  **Run Development Server**
+3.  **Run Development Server**
     ```bash
     npm run dev
     ```
 
 ## Usage
 
-1.  **Establish Authority**: Enter your company's core mission in the text area.
-2.  **Select Resolution**: Choose the desired resolution for your assets (1K, 2K, 4K).
-3.  **Assume the Mantle**: Click generate and watch as the AI weaves your brand identity.
-4.  **Refine**: Use the chat widget or the "Reshape" buttons on logos to tweak details.
-5.  **Export**: Download the ZIP package to get your icons and CSS variables for immediate implementation.
+1.  **Authenticate**: Upon loading the app, enter your Google Gemini API Key. You can get one for free at [Google AI Studio](https://aistudio.google.com/).
+2.  **Establish Authority**: Enter your company's core mission in the text area.
+3.  **Select Resolution**: Choose the desired resolution for your assets (1K, 2K, 4K).
+4.  **Assume the Mantle**: Click generate and watch as the AI weaves your brand identity.
+5.  **Refine**: Use the chat widget or the "Reshape" buttons on logos to tweak details.
+6.  **Export**: Download the ZIP package to get your icons and CSS variables for immediate implementation.
 
 ## License
 

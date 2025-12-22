@@ -6,9 +6,10 @@ import { Chat, GenerateContentResponse } from '@google/genai';
 
 interface ChatBotProps {
   brandData?: BrandIdentity;
+  apiKey: string;
 }
 
-const ChatBot: React.FC<ChatBotProps> = ({ brandData }) => {
+const ChatBot: React.FC<ChatBotProps> = ({ brandData, apiKey }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: 'model', text: 'Greetings. I am the Steward of the Mantle. I am here to help you define the coat your application wears.', timestamp: Date.now() }
@@ -21,15 +22,18 @@ const ChatBot: React.FC<ChatBotProps> = ({ brandData }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Re-initialize chat when brand data changes (context update)
-    chatSessionRef.current = createChatSession(brandData);
+    // Re-initialize chat when brand data changes (context update) or apiKey changes
+    if (apiKey) {
+      chatSessionRef.current = createChatSession(apiKey, brandData);
+    }
+    
     if (brandData) {
         setMessages(prev => [
             ...prev,
             { role: 'model', text: `I have received the new decrees for "${brandData.mission.substring(0, 20)}...". How shall we refine this Mantle?`, timestamp: Date.now() }
         ])
     }
-  }, [brandData]);
+  }, [brandData, apiKey]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -40,10 +44,10 @@ const ChatBot: React.FC<ChatBotProps> = ({ brandData }) => {
   }, [messages, isOpen]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !apiKey) return;
     
     if (!chatSessionRef.current) {
-        chatSessionRef.current = createChatSession(brandData);
+        chatSessionRef.current = createChatSession(apiKey, brandData);
     }
 
     const userMsg: ChatMessage = { role: 'user', text: input, timestamp: Date.now() };

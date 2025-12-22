@@ -10,6 +10,7 @@ interface BrandDashboardProps {
   data: BrandIdentity;
   logos: LogoResult;
   onUpdateLogo?: (type: 'primary' | 'secondary', newImage: string) => void;
+  apiKey: string;
 }
 
 // Contrast Helper Functions
@@ -115,7 +116,7 @@ const MockUI: React.FC<{ theme: ThemeColors, title: string, logo?: string | null
   );
 };
 
-const BrandDashboard: React.FC<BrandDashboardProps> = ({ data, logos, onUpdateLogo }) => {
+const BrandDashboard: React.FC<BrandDashboardProps> = ({ data, logos, onUpdateLogo, apiKey }) => {
   const dashboardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
@@ -311,7 +312,7 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
       if (!logos.primary) return;
       setIsGeneratingVariations(true);
       try {
-          const newVariations = await generateLogoVariations(logos.primary);
+          const newVariations = await generateLogoVariations(apiKey, logos.primary);
           setVariations(newVariations);
       } catch (e) {
           console.error("Failed to generate variations", e);
@@ -343,7 +344,7 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
 
       setIsRefining(true);
       try {
-          const refinedImage = await refineLogo(currentImage, editPrompt);
+          const refinedImage = await refineLogo(apiKey, currentImage, editPrompt);
           if (refinedImage && onUpdateLogo) {
               onUpdateLogo(editingTarget, refinedImage);
               setEditingTarget(null);

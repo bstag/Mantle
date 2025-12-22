@@ -1,18 +1,41 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import GeneratorForm from './components/GeneratorForm';
 import BrandDashboard from './components/BrandDashboard';
 import ChatBot from './components/ChatBot';
+import ApiKeyModal from './components/ApiKeyModal';
 import { generateBrandIdentity, generateLogos } from './services/geminiService';
 import { BrandIdentity, ImageSize, LogoResult } from './types';
 
 const App: React.FC = () => {
+  const [apiKey, setApiKey] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [brandData, setBrandData] = useState<BrandIdentity | null>(null);
   const [logos, setLogos] = useState<LogoResult>({ primary: null, secondary: null, variations: [] });
   const [error, setError] = useState<string | null>(null);
 
+  // Load key from storage on mount
+  useEffect(() => {
+    const storedKey = localStorage.getItem('gemini_api_key');
+    if (storedKey) {
+      setApiKey(storedKey);
+    }
+  }, []);
+
+  const handleSaveKey = (key: string) => {
+    localStorage.setItem('gemini_api_key', key);
+    setApiKey(key);
+  };
+
+  const handleClearKey = () => {
+      localStorage.removeItem('gemini_api_key');
+      setApiKey(null);
+      setBrandData(null);
+  }
+
   const handleGenerate = async (mission: string, size: ImageSize) => {
+    if (!apiKey) return;
+
     setIsGenerating(true);
     setError(null);
     setBrandData(null);
@@ -20,20 +43,19 @@ const App: React.FC = () => {
 
     try {
       // 1. Generate text first to give immediate feedback
-      const identity = await generateBrandIdentity(mission);
+      const identity = await generateBrandIdentity(apiKey, mission);
       setBrandData(identity);
 
-      // 2. Generate images in background/parallel but we wait here for simplicity in this flow
-      // Note: We might want to show the dashboard with loading skeletons for images.
-      const generatedLogos = await generateLogos(mission, size);
+      // 2. Generate images in background/parallel
+      const generatedLogos = await generateLogos(apiKey, mission, size);
       setLogos(generatedLogos);
 
     } catch (err: any) {
       console.error(err);
       setError(err.message || "An unexpected error occurred while generating your brand.");
-      // If we got partial data (text but image failed), we keep the text
-      if (!brandData && !logos.primary) {
-          // total failure
+      // Check for auth errors
+      if (err.message && (err.message.includes("401") || err.message.includes("API key"))) {
+          setError("Invalid API Key. Please check your key.");
       }
     } finally {
       setIsGenerating(false);
@@ -44,14 +66,14 @@ const App: React.FC = () => {
       setLogos(prev => ({
           ...prev,
           [type]: newImage,
-          // If primary changes, verify variations clear or keep them? 
-          // Mantle philosophy: If the coat changes, the variations might be outdated, but let's keep them for now.
       }));
   };
 
   return (
     <div className="min-h-screen bg-page text-main selection:bg-accent selection:text-on-accent transition-colors duration-300">
       
+      {!apiKey && <ApiKeyModal onSave={handleSaveKey} />}
+
       {/* Navbar */}
       <nav className="w-full border-b border-dim bg-page/80 backdrop-blur-md sticky top-0 z-40 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -61,14 +83,19 @@ const App: React.FC = () => {
             </div>
             <span className="text-xl font-bold text-main tracking-tight font-serif">Mantle</span>
           </div>
-          <div className="flex gap-4 text-sm font-medium text-muted">
+          <div className="flex items-center gap-4 text-sm font-medium text-muted">
              <span className="hidden sm:inline opacity-70">Stagware Product Suite</span>
+             {apiKey && (
+                 <button onClick={handleClearKey} className="text-xs hover:text-accent underline">
+                     Change Key
+                 </button>
+             )}
           </div>
         </div>
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative">
         
         {!brandData && !isGenerating && (
             <div className="text-center mb-16 space-y-4 animate-fade-in-up">
@@ -98,7 +125,7 @@ const App: React.FC = () => {
         {/* Results */}
         {(brandData || isGenerating) && (
             <div className={`transition-opacity duration-1000 ${brandData ? 'opacity-100' : 'opacity-0'}`}>
-                {brandData && <BrandDashboard data={brandData} logos={logos} onUpdateLogo={handleUpdateLogo} />}
+                {brandData && apiKey && <BrandDashboard data={brandData} logos={logos} onUpdateLogo={handleUpdateLogo} apiKey={apiKey} />}
             </div>
         )}
 
@@ -112,7 +139,7 @@ const App: React.FC = () => {
       </footer>
 
       {/* Chat Widget */}
-      <ChatBot brandData={brandData || undefined} />
+      {apiKey && <ChatBot brandData={brandData || undefined} apiKey={apiKey} />}
 
     </div>
   );

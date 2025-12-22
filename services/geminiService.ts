@@ -1,15 +1,15 @@
 
-import { GoogleGenAI, Type, FunctionDeclaration, Schema } from "@google/genai";
-import { BrandIdentity, ImageSize, ChatMessage, LogoVariation } from "../types";
+import { GoogleGenAI, Type } from "@google/genai";
+import { BrandIdentity, ImageSize, LogoVariation } from "../types";
 
-// Helper to ensure we get a fresh client with the latest key
-const getAiClient = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to ensure we get a fresh client with the provided key
+const getAiClient = (apiKey: string) => {
+  return new GoogleGenAI({ apiKey });
 };
 
 // 1. Text Generation: Brand Identity (Colors, Fonts, Voice)
-export const generateBrandIdentity = async (mission: string): Promise<BrandIdentity> => {
-  const ai = getAiClient();
+export const generateBrandIdentity = async (apiKey: string, mission: string): Promise<BrandIdentity> => {
+  const ai = getAiClient(apiKey);
   
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview', // Strong reasoning for brand strategy
@@ -94,13 +94,8 @@ export const generateBrandIdentity = async (mission: string): Promise<BrandIdent
 };
 
 // 2. Image Generation: Logos
-export const generateLogos = async (mission: string, size: ImageSize): Promise<{ primary: string | null, secondary: string | null, variations: LogoVariation[] }> => {
-  // CRITICAL: Ensure key is selected for Pro Image model
-  if (window.aistudio && !await window.aistudio.hasSelectedApiKey()) {
-      await window.aistudio.openSelectKey();
-  }
-
-  const ai = getAiClient();
+export const generateLogos = async (apiKey: string, mission: string, size: ImageSize): Promise<{ primary: string | null, secondary: string | null, variations: LogoVariation[] }> => {
+  const ai = getAiClient(apiKey);
   const model = 'gemini-3-pro-image-preview';
 
   // We will run two requests in parallel for efficiency
@@ -155,12 +150,8 @@ export const generateLogos = async (mission: string, size: ImageSize): Promise<{
 };
 
 // 2b. Generate Variations based on Primary Logo
-export const generateLogoVariations = async (originalLogoBase64: string): Promise<LogoVariation[]> => {
-  if (window.aistudio && !await window.aistudio.hasSelectedApiKey()) {
-      await window.aistudio.openSelectKey();
-  }
-  
-  const ai = getAiClient();
+export const generateLogoVariations = async (apiKey: string, originalLogoBase64: string): Promise<LogoVariation[]> => {
+  const ai = getAiClient(apiKey);
   const model = 'gemini-3-pro-image-preview';
   
   // Strip prefix to get raw base64
@@ -219,12 +210,8 @@ export const generateLogoVariations = async (originalLogoBase64: string): Promis
 };
 
 // 2c. Refine Existing Logo
-export const refineLogo = async (currentImageBase64: string, instruction: string): Promise<string | null> => {
-  if (window.aistudio && !await window.aistudio.hasSelectedApiKey()) {
-      await window.aistudio.openSelectKey();
-  }
-
-  const ai = getAiClient();
+export const refineLogo = async (apiKey: string, currentImageBase64: string, instruction: string): Promise<string | null> => {
+  const ai = getAiClient(apiKey);
   const model = 'gemini-3-pro-image-preview'; // Use Pro for high quality editing
 
   // Strip prefix if present
@@ -255,8 +242,8 @@ export const refineLogo = async (currentImageBase64: string, instruction: string
 };
 
 // 3. Chat: Brand Consultant
-export const createChatSession = (initialBrandContext?: BrandIdentity) => {
-  const ai = getAiClient();
+export const createChatSession = (apiKey: string, initialBrandContext?: BrandIdentity) => {
+  const ai = getAiClient(apiKey);
   
   const systemInstruction = `You are "The Mantle Steward", a royal tailor and brand strategist for the Stagware ecosystem.
   
