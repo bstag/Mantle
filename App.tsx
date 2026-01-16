@@ -4,6 +4,7 @@ import GeneratorForm from './components/GeneratorForm';
 import BrandDashboard from './components/BrandDashboard';
 import ChatBot from './components/ChatBot';
 import ApiKeyModal from './components/ApiKeyModal';
+import { LandingPage } from './components/LandingPage';
 import { generateBrandIdentity, generateLogos } from './services/geminiService';
 import { BrandIdentity, ImageSize, LogoResult } from './types';
 
@@ -13,12 +14,18 @@ const App: React.FC = () => {
   const [brandData, setBrandData] = useState<BrandIdentity | null>(null);
   const [logos, setLogos] = useState<LogoResult>({ primary: null, secondary: null, variations: [] });
   const [error, setError] = useState<string | null>(null);
+  const [hasSeenLanding, setHasSeenLanding] = useState(false);
 
-  // Load key from storage on mount
+  // Load key and landing status from storage on mount
   useEffect(() => {
     const storedKey = localStorage.getItem('gemini_api_key');
     if (storedKey) {
       setApiKey(storedKey);
+    }
+
+    const seenLanding = localStorage.getItem('mantle_seen_landing');
+    if (seenLanding === 'true') {
+      setHasSeenLanding(true);
     }
   }, []);
 
@@ -31,6 +38,11 @@ const App: React.FC = () => {
       localStorage.removeItem('gemini_api_key');
       setApiKey(null);
       setBrandData(null);
+  }
+
+  const handleGetStarted = () => {
+    localStorage.setItem('mantle_seen_landing', 'true');
+    setHasSeenLanding(true);
   }
 
   const handleGenerate = async (mission: string, size: ImageSize) => {
@@ -69,9 +81,14 @@ const App: React.FC = () => {
       }));
   };
 
+  // Show landing page if user hasn't seen it yet
+  if (!hasSeenLanding) {
+    return <LandingPage onGetStarted={handleGetStarted} />;
+  }
+
   return (
     <div className="min-h-screen bg-page text-main selection:bg-accent selection:text-on-accent transition-colors duration-300">
-      
+
       {!apiKey && <ApiKeyModal onSave={handleSaveKey} />}
 
       {/* Navbar */}
