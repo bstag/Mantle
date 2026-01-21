@@ -18,11 +18,18 @@ Part of the **Stagware** product suite, Mantle treats branding as a regal "coat"
 
 ## Technologies
 
-*   **Frontend**: React, TypeScript, Vite
-*   **Styling**: Tailwind CSS (Semantic theming)
+*   **Frontend**: React 19, TypeScript, Vite 6
+*   **Styling**: Tailwind CSS (CDN, Semantic theming)
+*   **Build Tool**: Vite with standard bundling (all dependencies bundled for production)
+*   **Deployment**: Cloudflare Pages
 *   **AI Models**:
     *   `gemini-3-pro-preview` (Text, Strategy, Chat)
     *   `gemini-3-pro-image-preview` (Logo Generation, Editing)
+*   **Key Dependencies**:
+    *   `@google/genai` - Gemini API client
+    *   `html2canvas` - Screenshot generation
+    *   `jspdf` - PDF export
+    *   `jszip` - Asset packaging
 
 ## Setup & Installation
 
@@ -41,6 +48,19 @@ Part of the **Stagware** product suite, Mantle treats branding as a regal "coat"
     ```bash
     npm run dev
     ```
+    The app will be available at `http://localhost:3000`
+
+4.  **Build for Production**
+    ```bash
+    npm run build
+    ```
+    This creates an optimized production build in the `dist/` folder.
+
+5.  **Preview Production Build**
+    ```bash
+    npm run preview
+    ```
+    Test the production build locally before deploying.
 
 ## Deployment to Cloudflare Pages
 
@@ -52,11 +72,17 @@ Part of the **Stagware** product suite, Mantle treats branding as a regal "coat"
     *   Navigate to **Pages** → **Create a project**
     *   Connect your Git repository
 3.  **Configure Build Settings**:
+    *   **Framework preset**: `Vite`
     *   **Build command**: `npm run build`
     *   **Build output directory**: `dist`
-    *   **Node version**: `18` or higher
-4.  **Environment Variables**: Add `GEMINI_API_KEY` if needed (though this app uses BYOK, so it's optional)
+    *   **Node version**: `18` or higher (recommended: `20`)
+4.  **Environment Variables**: Not required - this app uses BYOK (Bring Your Own Key) with client-side storage
 5.  **Deploy**: Click **Save and Deploy**
+
+The deployment includes:
+- SPA routing via `_redirects` file
+- Security headers via `_headers` file
+- Optimized asset caching
 
 ### Via Wrangler CLI
 
@@ -82,6 +108,36 @@ Part of the **Stagware** product suite, Mantle treats branding as a regal "coat"
 4.  **Assume the Mantle**: Click generate and watch as the AI weaves your brand identity.
 5.  **Refine**: Use the chat widget or the "Reshape" buttons on logos to tweak details.
 6.  **Export**: Download the ZIP package to get your icons and CSS variables for immediate implementation.
+
+## Project Structure
+
+```
+mantle/
+├── components/          # React components
+│   ├── ApiKeyModal.tsx
+│   ├── BrandDashboard.tsx
+│   ├── ChatBot.tsx
+│   ├── FeaturesPage.tsx
+│   ├── GeneratorForm.tsx
+│   └── LandingPage.tsx
+├── services/           # API services
+│   └── geminiService.ts
+├── public/             # Static assets
+│   ├── _headers        # Cloudflare Pages headers
+│   └── _redirects      # SPA routing configuration
+├── App.tsx             # Main application component
+├── index.tsx           # Application entry point
+├── types.ts            # TypeScript type definitions
+├── vite.config.ts      # Vite configuration
+└── wrangler.toml       # Cloudflare Pages configuration
+```
+
+## Development Notes
+
+- **No backend required**: All AI interactions happen client-side using the Gemini API
+- **Privacy-first**: API keys are stored in browser localStorage, never transmitted to any server
+- **Standard Vite setup**: All dependencies are bundled for optimal production performance
+- **Responsive design**: Works on desktop, tablet, and mobile devices
 
 ## License
 
