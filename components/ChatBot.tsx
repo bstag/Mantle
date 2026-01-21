@@ -16,6 +16,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ brandData, apiKey }) => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const MAX_MESSAGE_LENGTH = 2000;
   
   // Keep the chat session instance ref so we don't recreate it unnecessarily
   const chatSessionRef = useRef<Chat | null>(null);
@@ -140,14 +141,22 @@ const ChatBot: React.FC<ChatBotProps> = ({ brandData, apiKey }) => {
           {/* Input */}
           <div className="p-4 bg-surface border-t border-dim">
              <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Consult the Steward..."
-                  className="flex-1 bg-page text-main border border-dim rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-accent outline-none placeholder-muted"
-                />
+                <div className="flex-1 relative">
+                  <input 
+                    type="text" 
+                    value={input}
+                    onChange={(e) => e.target.value.length <= MAX_MESSAGE_LENGTH && setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                    placeholder="Consult the Steward..."
+                    maxLength={MAX_MESSAGE_LENGTH}
+                    className="w-full bg-page text-main border border-dim rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-accent outline-none placeholder-muted"
+                  />
+                  {input.length > MAX_MESSAGE_LENGTH * 0.8 && (
+                    <span className="absolute -top-5 right-0 text-[10px] text-muted">
+                      {input.length}/{MAX_MESSAGE_LENGTH}
+                    </span>
+                  )}
+                </div>
                 <button 
                   onClick={handleSend}
                   disabled={!input.trim() || isLoading}

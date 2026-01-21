@@ -174,6 +174,7 @@ const BrandDashboard: React.FC<BrandDashboardProps> = ({ data, logos, onUpdateLo
   const [editPrompt, setEditPrompt] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isRemovingBg, setIsRemovingBg] = useState(false);
+  const MAX_EDIT_PROMPT_LENGTH = 1000;
 
   // Sync prop changes if they happen upstream
   useEffect(() => {
@@ -439,16 +440,20 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
                   <h3 className="text-xl font-bold text-main mb-2 font-serif">
                       {editMode === 'refine' ? 'Reshape Sigil' : 'Regenerate Sigil'}
                   </h3>
-                  <p className="text-muted text-sm mb-6">
+                  <p className="text-muted text-sm mb-2">
                       {editMode === 'refine' 
                         ? 'Describe how the current Mantle should be altered.' 
                         : 'Feedback for the new iteration (optional). Leave empty for a fresh attempt.'}
                   </p>
+                  <div className="text-xs text-muted mb-2 text-right">
+                    {editPrompt.length}/{MAX_EDIT_PROMPT_LENGTH}
+                  </div>
                   
                   <textarea 
                     value={editPrompt}
-                    onChange={(e) => setEditPrompt(e.target.value)}
+                    onChange={(e) => e.target.value.length <= MAX_EDIT_PROMPT_LENGTH && setEditPrompt(e.target.value)}
                     placeholder={editMode === 'refine' ? "E.g., Make it blue, add a crown..." : "E.g., Make it more abstract, less detailed..."}
+                    maxLength={MAX_EDIT_PROMPT_LENGTH}
                     className="w-full bg-page border border-dim rounded-lg p-3 text-main placeholder-muted focus:ring-2 focus:ring-accent outline-none resize-none h-32 mb-6"
                     autoFocus
                   />
@@ -850,8 +855,8 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
            </div>
            
            <div className="relative rounded-xl overflow-hidden bg-page border border-dim shadow-inner group">
-              <pre className="p-6 overflow-x-auto text-sm font-mono leading-relaxed text-main">
-                  <code dangerouslySetInnerHTML={{ __html: cssSnippet.replace(/\n/g, '<br/>').replace(/\s\s/g, '&nbsp;&nbsp;') }} />
+              <pre className="p-6 overflow-x-auto text-sm font-mono leading-relaxed text-main whitespace-pre-wrap">
+                  <code>{cssSnippet}</code>
               </pre>
            </div>
            <p className="text-xs text-muted mt-4 text-center">

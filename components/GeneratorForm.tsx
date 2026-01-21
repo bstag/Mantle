@@ -10,11 +10,19 @@ interface GeneratorFormProps {
 const GeneratorForm: React.FC<GeneratorFormProps> = ({ onGenerate, isGenerating }) => {
   const [mission, setMission] = useState('');
   const [size, setSize] = useState<ImageSize>('1K');
+  const MAX_MISSION_LENGTH = 5000;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (mission.trim()) {
+    if (mission.trim() && mission.length <= MAX_MISSION_LENGTH) {
       onGenerate(mission, size);
+    }
+  };
+
+  const handleMissionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    if (value.length <= MAX_MISSION_LENGTH) {
+      setMission(value);
     }
   };
 
@@ -23,17 +31,23 @@ const GeneratorForm: React.FC<GeneratorFormProps> = ({ onGenerate, isGenerating 
       <h2 className="text-2xl font-bold mb-6 text-main text-center font-serif tracking-wide">Establish Your Authority</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="mission" className="block text-sm font-medium text-muted mb-2 uppercase tracking-wider">
-            Core Mission / Purpose
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label htmlFor="mission" className="block text-sm font-medium text-muted uppercase tracking-wider">
+              Core Mission / Purpose
+            </label>
+            <span className="text-xs text-muted">
+              {mission.length}/{MAX_MISSION_LENGTH}
+            </span>
+          </div>
           <textarea
             id="mission"
             rows={4}
             className="w-full bg-page border border-dim rounded-lg p-4 text-main placeholder-muted focus:ring-2 focus:ring-accent focus:border-transparent transition-all resize-none shadow-inner"
             placeholder="Describe the entity you wish to clothe. E.g., A logistics firm requiring ironclad reliability, or a boutique seeking a summer refresh..."
             value={mission}
-            onChange={(e) => setMission(e.target.value)}
+            onChange={handleMissionChange}
             disabled={isGenerating}
+            maxLength={MAX_MISSION_LENGTH}
           />
         </div>
 
