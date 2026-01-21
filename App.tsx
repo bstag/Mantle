@@ -5,6 +5,9 @@ import BrandDashboard from './components/BrandDashboard';
 import ApiKeyModal from './components/ApiKeyModal';
 import LandingPage from './components/LandingPage';
 import FeaturesPage from './components/FeaturesPage';
+import Navbar from './components/Navbar';
+import Hero from './components/Hero';
+import Footer from './components/Footer';
 import { generateBrandIdentity, generateLogos, regenerateSingleLogo } from './services/geminiService';
 import { BrandIdentity, ImageSize, LogoResult } from './types';
 
@@ -104,40 +107,16 @@ const App: React.FC = () => {
       
       {!apiKey && <ApiKeyModal onSave={handleSaveKey} />}
 
-      {/* Navbar */}
-      <nav className="w-full border-b border-dim bg-page/80 backdrop-blur-md sticky top-0 z-40 transition-colors duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setCurrentView('landing')}>
-            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center shadow-lg border border-dim overflow-hidden">
-               <img src="/logo.webp" alt="Mantle Logo" className="w-full h-full object-cover" />
-            </div>
-            <span className="text-xl font-bold text-main tracking-tight font-serif">Mantle</span>
-          </div>
-          <div className="flex items-center gap-4 text-sm font-medium text-muted">
-             <span className="hidden sm:inline opacity-70">Stagware Product Suite</span>
-             {apiKey && (
-                 <button onClick={handleClearKey} className="text-xs hover:text-accent underline">
-                     Change Key
-                 </button>
-             )}
-          </div>
-        </div>
-      </nav>
+      <Navbar 
+        onLogoClick={() => setCurrentView('landing')} 
+        onClearKey={handleClearKey} 
+        hasApiKey={!!apiKey} 
+      />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative">
         
-        {!brandData && !isGenerating && (
-            <div className="text-center mb-16 space-y-4 animate-fade-in-up">
-                <h1 className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-main via-accent to-muted font-serif pb-2 leading-tight">
-                    Weave Your Mantle.
-                </h1>
-                <p className="text-xl text-muted max-w-2xl mx-auto font-light leading-relaxed">
-                    Your code is the muscle; your brand is the Mantle. 
-                    Establish the regal "coat" your application wears for every season.
-                </p>
-            </div>
-        )}
+        {!brandData && !isGenerating && <Hero />}
 
         {/* Form is always visible at top or center until generated */}
         <div className={`transition-all duration-700 ease-in-out ${brandData ? 'mb-12' : 'mb-0'}`}>
@@ -169,12 +148,7 @@ const App: React.FC = () => {
 
       </main>
       
-      {/* Footer */}
-      <footer className="w-full border-t border-dim py-8 mt-12 bg-page transition-colors duration-300">
-        <div className="max-w-7xl mx-auto px-4 text-center text-muted text-sm">
-            &copy; {new Date().getFullYear()} Stagware. The Mantle Identity Layer.
-        </div>
-      </footer>
+      <Footer />
 
     </div>
   );
