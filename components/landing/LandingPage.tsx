@@ -1,12 +1,15 @@
 
 import React from 'react';
+import ThemeToggle from '../common/ThemeToggle';
 
 interface LandingPageProps {
   onEnter: () => void;
   onLearnMore: () => void;
+  theme: 'light' | 'dark';
+  onToggleTheme: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onLearnMore }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onLearnMore, theme, onToggleTheme }) => {
   return (
     <div className="min-h-screen bg-page text-main selection:bg-accent selection:text-on-accent transition-colors duration-300 flex flex-col">
       {/* Navigation */}
@@ -25,6 +28,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onLearnMore }) => {
             >
                 Features
             </button>
+            <ThemeToggle theme={theme} onToggle={onToggleTheme} />
             <button 
                 onClick={onEnter}
                 className="text-sm font-medium text-accent hover:text-main transition-colors"
@@ -40,7 +44,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onLearnMore }) => {
         <section className="relative pt-20 pb-32 overflow-hidden">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
                 <div className="inline-block px-4 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-accent text-sm font-medium tracking-wide uppercase mb-6 animate-fade-in">
-                    Stagware Product Suite
+                    Stagware Brand Designer
                 </div>
                 <h1 className="text-5xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-main via-accent to-muted font-serif mb-6 leading-tight animate-fade-in-up">
                     Weave Your<br />Identity.

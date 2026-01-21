@@ -1,12 +1,15 @@
 import React from 'react';
+import ThemeToggle from '../common/ThemeToggle';
 
 interface NavbarProps {
   onLogoClick?: () => void;
   onClearKey?: () => void;
   hasApiKey?: boolean;
+  theme: 'light' | 'dark';
+  onToggleTheme: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onLogoClick, onClearKey, hasApiKey }) => {
+const Navbar: React.FC<NavbarProps> = ({ onLogoClick, onClearKey, hasApiKey, theme, onToggleTheme }) => {
   return (
     <nav className="w-full border-b border-dim bg-page/80 backdrop-blur-md sticky top-0 z-40 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -18,6 +21,7 @@ const Navbar: React.FC<NavbarProps> = ({ onLogoClick, onClearKey, hasApiKey }) =
         </div>
         <div className="flex items-center gap-4 text-sm font-medium text-muted">
           <span className="hidden sm:inline opacity-70">Stagware Product Suite</span>
+          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
           {hasApiKey && (
             <button onClick={onClearKey} className="text-xs hover:text-accent underline">
               Change Key

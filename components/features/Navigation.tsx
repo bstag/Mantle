@@ -1,11 +1,14 @@
 import React from 'react';
+import ThemeToggle from '../common/ThemeToggle';
 
 interface NavigationProps {
   onBack: () => void;
   onEnter: () => void;
+  theme: 'light' | 'dark';
+  onToggleTheme: () => void;
 }
 
-const Navigation: React.FC<NavigationProps> = ({ onBack, onEnter }) => {
+const Navigation: React.FC<NavigationProps> = ({ onBack, onEnter, theme, onToggleTheme }) => {
   return (
     <nav className="w-full border-b border-dim bg-page/80 backdrop-blur-md sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -22,6 +25,7 @@ const Navigation: React.FC<NavigationProps> = ({ onBack, onEnter }) => {
           >
               Back to Home
           </button>
+          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
           <button 
               onClick={onEnter}
               className="px-4 py-2 bg-accent text-on-accent rounded-lg text-sm font-bold hover:opacity-90 transition-opacity shadow-md"

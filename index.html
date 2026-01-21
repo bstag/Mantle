@@ -62,97 +62,9 @@
       ]
     }
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              page: 'var(--bg-page)',
-              surface: 'var(--bg-surface)',
-              main: 'var(--text-main)',
-              muted: 'var(--text-muted)',
-              dim: 'var(--border-dim)',
-              accent: 'var(--brand-accent)',
-              'on-accent': 'var(--text-on-accent)',
-              'imperial-velvet': 'var(--color-imperial-velvet)',
-              'gilded-antler': 'var(--color-gilded-antler)',
-              'midnight-coat': 'var(--color-midnight-coat)',
-              'morning-mist': 'var(--color-morning-mist)',
-              'steel-fur': 'var(--color-steel-fur)',
-            },
-            fontFamily: {
-              sans: ['var(--font-body)', 'sans-serif'],
-              serif: ['var(--font-header)', 'serif'],
-              cinzel: ['Cinzel', 'serif'],
-              inter: ['Inter', 'sans-serif'],
-            }
-          }
-        }
-      }
-    </script>
-    <style>
-      :root {
-        /* The Royal Script */
-        --font-header: 'Cinzel', serif;
-        --font-body: 'Inter', sans-serif;
-
-        /* Thread & Dye */
-        --color-imperial-velvet: #2E1A47;
-        --color-gilded-antler: #D4AF37;
-        --color-midnight-coat: #0F1115;
-        --color-morning-mist: #F4F6F8;
-        --color-steel-fur: #8A9BB3;
-
-        /* Summer Mantle (Light) */
-        --bg-page: #F4F6F8;
-        --bg-surface: #FFFFFF;
-        --text-main: #0F1115;
-        --text-muted: #5E6C84;
-        --border-dim: #CBD2D9;
-        --brand-accent: #2E1A47;
-        --text-on-accent: #FFFFFF; /* Added for readability */
-      }
-
-      @media (prefers-color-scheme: dark) {
-        :root {
-          /* Winter Mantle (Dark) */
-          --bg-page: #0F1115;
-          --bg-surface: #1A1C23;
-          --text-main: #F4F6F8;
-          --text-muted: #8A9BB3;
-          --border-dim: #2E1A47;
-          --brand-accent: #D4AF37;
-          --text-on-accent: #2E1A47; /* Added for readability */
-        }
-      }
-
-      body {
-        font-family: var(--font-body);
-        background-color: var(--bg-page);
-        color: var(--text-main);
-        transition: background-color 0.3s ease, color 0.3s ease;
-      }
-      
-      /* Custom scrollbar for dashboard feeling */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: var(--bg-page); 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: var(--border-dim); 
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: var(--text-muted); 
-      }
-    </style>
   </head>
   <body>
     <div id="root"></div>

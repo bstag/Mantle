@@ -20,15 +20,31 @@ const App: React.FC = () => {
   const [brandData, setBrandData] = useState<BrandIdentity | null>(null);
   const [logos, setLogos] = useState<LogoResult>({ primary: null, secondary: null, variations: [] });
   const [error, setError] = useState<string | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
-  // Load key from storage on mount
+  // Load key and theme from storage on mount
   useEffect(() => {
     const storedKey = localStorage.getItem('gemini_api_key');
     if (storedKey) {
       setApiKey(storedKey);
       setCurrentView('app'); // Skip landing if user has been here before
     }
+    
+    const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    if (storedTheme) {
+      setTheme(storedTheme);
+    }
   }, []);
+
+  // Apply theme to document element
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
 
   const handleSaveKey = (key: string) => {
     localStorage.setItem('gemini_api_key', key);
@@ -94,11 +110,11 @@ const App: React.FC = () => {
 
   // View Routing
   if (currentView === 'landing') {
-    return <LandingPage onEnter={() => setCurrentView('app')} onLearnMore={() => setCurrentView('features')} />;
+    return <LandingPage onEnter={() => setCurrentView('app')} onLearnMore={() => setCurrentView('features')} theme={theme} onToggleTheme={toggleTheme} />;
   }
 
   if (currentView === 'features') {
-    return <FeaturesPage onBack={() => setCurrentView('landing')} onEnter={() => setCurrentView('app')} />;
+    return <FeaturesPage onBack={() => setCurrentView('landing')} onEnter={() => setCurrentView('app')} theme={theme} onToggleTheme={toggleTheme} />;
   }
 
   // App View
@@ -110,7 +126,9 @@ const App: React.FC = () => {
       <Navbar 
         onLogoClick={() => setCurrentView('landing')} 
         onClearKey={handleClearKey} 
-        hasApiKey={!!apiKey} 
+        hasApiKey={!!apiKey}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Main Content */}

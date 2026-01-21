@@ -7,12 +7,14 @@ import PrivacySection from './PrivacySection';
 interface FeaturesPageProps {
   onBack: () => void;
   onEnter: () => void;
+  theme: 'light' | 'dark';
+  onToggleTheme: () => void;
 }
 
-const FeaturesPage: React.FC<FeaturesPageProps> = ({ onBack, onEnter }) => {
+const FeaturesPage: React.FC<FeaturesPageProps> = ({ onBack, onEnter, theme, onToggleTheme }) => {
   return (
     <div className="min-h-screen bg-page text-main selection:bg-accent selection:text-on-accent transition-colors duration-300">
-      <Navigation onBack={onBack} onEnter={onEnter} />
+      <Navigation onBack={onBack} onEnter={onEnter} theme={theme} onToggleTheme={onToggleTheme} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         
