@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import GeneratorForm from './components/GeneratorForm';
-import BrandDashboard from './components/BrandDashboard';
-import ApiKeyModal from './components/ApiKeyModal';
-import LandingPage from './components/LandingPage';
-import FeaturesPage from './components/FeaturesPage';
-import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import Footer from './components/Footer';
+import GeneratorForm from './components/app/GeneratorForm';
+import BrandDashboard from './components/dashboard/BrandDashboard';
+import ApiKeyModal from './components/app/ApiKeyModal';
+import LandingPage from './components/landing/LandingPage';
+import FeaturesPage from './components/features/FeaturesPage';
+import Navbar from './components/app/Navbar';
+import Hero from './components/landing/Hero';
+import Footer from './components/common/Footer';
 import { generateBrandIdentity, generateLogos, regenerateSingleLogo } from './services/geminiService';
 import { BrandIdentity, ImageSize, LogoResult } from './types';
 
