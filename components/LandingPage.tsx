@@ -3,9 +3,10 @@ import React from 'react';
 
 interface LandingPageProps {
   onEnter: () => void;
+  onLearnMore: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onLearnMore }) => {
   return (
     <div className="min-h-screen bg-page text-main selection:bg-accent selection:text-on-accent transition-colors duration-300 flex flex-col">
       {/* Navigation */}
@@ -17,12 +18,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
             </div>
             <span className="text-xl font-bold text-main tracking-tight font-serif">Mantle</span>
           </div>
-          <button 
-            onClick={onEnter}
-            className="text-sm font-medium text-accent hover:text-main transition-colors"
-          >
-            Enter Application &rarr;
-          </button>
+          <div className="flex items-center gap-6">
+             <button 
+                onClick={onLearnMore}
+                className="text-sm font-medium text-muted hover:text-main transition-colors hidden sm:block"
+            >
+                Features
+            </button>
+            <button 
+                onClick={onEnter}
+                className="text-sm font-medium text-accent hover:text-main transition-colors"
+            >
+                Enter Application &rarr;
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -47,12 +56,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
                     >
                         Forge Your Brand
                     </button>
-                    <a 
-                        href="#features"
+                    <button 
+                        onClick={onLearnMore}
                         className="px-8 py-4 bg-surface border border-dim text-main rounded-lg font-medium text-lg hover:bg-page transition-colors"
                     >
                         Learn More
-                    </a>
+                    </button>
                 </div>
             </div>
             
@@ -60,7 +69,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-accent/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
         </section>
 
-        {/* Features Grid */}
+        {/* Features Grid Summary */}
         <section id="features" className="py-24 bg-surface border-y border-dim">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12">

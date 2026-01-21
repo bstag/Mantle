@@ -5,12 +5,15 @@ import BrandDashboard from './components/BrandDashboard';
 import ChatBot from './components/ChatBot';
 import ApiKeyModal from './components/ApiKeyModal';
 import LandingPage from './components/LandingPage';
+import FeaturesPage from './components/FeaturesPage';
 import { generateBrandIdentity, generateLogos } from './services/geminiService';
 import { BrandIdentity, ImageSize, LogoResult } from './types';
 
+type ViewState = 'landing' | 'features' | 'app';
+
 const App: React.FC = () => {
   const [apiKey, setApiKey] = useState<string | null>(null);
-  const [showLanding, setShowLanding] = useState(true);
+  const [currentView, setCurrentView] = useState<ViewState>('landing');
   const [isGenerating, setIsGenerating] = useState(false);
   const [brandData, setBrandData] = useState<BrandIdentity | null>(null);
   const [logos, setLogos] = useState<LogoResult>({ primary: null, secondary: null, svg: null, variations: [] });
@@ -21,7 +24,7 @@ const App: React.FC = () => {
     const storedKey = localStorage.getItem('gemini_api_key');
     if (storedKey) {
       setApiKey(storedKey);
-      setShowLanding(false); // Skip landing if user has been here before
+      setCurrentView('app'); // Skip landing if user has been here before
     }
   }, []);
 
@@ -34,7 +37,7 @@ const App: React.FC = () => {
       localStorage.removeItem('gemini_api_key');
       setApiKey(null);
       setBrandData(null);
-      setShowLanding(true); // Go back to landing page on logout
+      setCurrentView('landing'); // Go back to landing page on logout
   }
 
   const handleGenerate = async (mission: string, size: ImageSize) => {
@@ -73,11 +76,16 @@ const App: React.FC = () => {
       }));
   };
 
-  // Render Landing Page if active and no API key is pre-loaded
-  if (showLanding && !apiKey) {
-      return <LandingPage onEnter={() => setShowLanding(false)} />;
+  // View Routing
+  if (currentView === 'landing') {
+    return <LandingPage onEnter={() => setCurrentView('app')} onLearnMore={() => setCurrentView('features')} />;
   }
 
+  if (currentView === 'features') {
+    return <FeaturesPage onBack={() => setCurrentView('landing')} onEnter={() => setCurrentView('app')} />;
+  }
+
+  // App View
   return (
     <div className="min-h-screen bg-page text-main selection:bg-accent selection:text-on-accent transition-colors duration-300">
       
@@ -86,7 +94,7 @@ const App: React.FC = () => {
       {/* Navbar */}
       <nav className="w-full border-b border-dim bg-page/80 backdrop-blur-md sticky top-0 z-40 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setCurrentView('landing')}>
             <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center shadow-lg border border-dim overflow-hidden">
                <img src="/logo.webp" alt="Mantle Logo" className="w-full h-full object-cover" />
             </div>
