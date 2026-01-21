@@ -1,3 +1,4 @@
+import JSZip from 'jszip';
 import { BrandIdentity, LogoResult, LogoVariation } from '../types';
 
 export interface ExampleBrand {
@@ -100,9 +101,6 @@ export const loadExample = async (folder: string): Promise<LoadedExample> => {
  * Downloads an example as a ZIP file (re-packages from loaded data)
  */
 export const downloadExampleZip = async (folder: string): Promise<void> => {
-  // Import dynamically to avoid loading JSZip unless needed
-  const JSZip = (await import('jszip')).default;
-  
   const basePath = `${EXAMPLES_BASE_PATH}/${folder}`;
   const zip = new JSZip();
 
