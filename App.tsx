@@ -9,9 +9,10 @@ import Navbar from './components/app/Navbar';
 import Hero from './components/landing/Hero';
 import Footer from './components/common/Footer';
 import { generateBrandIdentity, generateLogos, regenerateSingleLogo } from './services/geminiService';
+import { LoadedExample } from './services/exampleService';
 import { BrandIdentity, ImageSize, LogoResult } from './types';
 
-type ViewState = 'landing' | 'features' | 'app';
+type ViewState = 'landing' | 'features' | 'app' | 'example-preview';
 
 const App: React.FC = () => {
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -21,6 +22,7 @@ const App: React.FC = () => {
   const [logos, setLogos] = useState<LogoResult>({ primary: null, secondary: null, variations: [] });
   const [error, setError] = useState<string | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [isExampleMode, setIsExampleMode] = useState(false);
 
   // Load key and theme from storage on mount
   useEffect(() => {
@@ -108,13 +110,71 @@ const App: React.FC = () => {
       }
   };
 
+  const handleViewExample = (example: LoadedExample) => {
+    setBrandData(example.identity);
+    setLogos(example.logos);
+    setIsExampleMode(true);
+    setCurrentView('example-preview');
+  };
+
+  const handleExitExampleMode = () => {
+    setIsExampleMode(false);
+    setBrandData(null);
+    setLogos({ primary: null, secondary: null, variations: [] });
+    setCurrentView('landing');
+  };
+
   // View Routing
   if (currentView === 'landing') {
-    return <LandingPage onEnter={() => setCurrentView('app')} onLearnMore={() => setCurrentView('features')} theme={theme} onToggleTheme={toggleTheme} />;
+    return <LandingPage onEnter={() => setCurrentView('app')} onLearnMore={() => setCurrentView('features')} onViewExample={handleViewExample} theme={theme} onToggleTheme={toggleTheme} />;
   }
 
   if (currentView === 'features') {
     return <FeaturesPage onBack={() => setCurrentView('landing')} onEnter={() => setCurrentView('app')} theme={theme} onToggleTheme={toggleTheme} />;
+  }
+
+  // Example Preview View (read-only, no API key required)
+  if (currentView === 'example-preview' && brandData) {
+    return (
+      <div className="min-h-screen bg-page text-main selection:bg-accent selection:text-on-accent transition-colors duration-300">
+        <Navbar 
+          onLogoClick={handleExitExampleMode} 
+          onClearKey={() => {}}
+          hasApiKey={false}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative">
+          {/* Example Mode Banner */}
+          <div className="mb-8 p-4 bg-accent/10 border border-accent/30 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <span className="text-main font-medium">Viewing Example Brand</span>
+              <span className="text-muted text-sm">— This is a read-only preview</span>
+            </div>
+            <button
+              onClick={handleExitExampleMode}
+              className="px-4 py-2 bg-surface border border-dim text-main rounded-lg text-sm font-medium hover:bg-page transition-colors"
+            >
+              ← Back to Gallery
+            </button>
+          </div>
+
+          <BrandDashboard 
+            data={brandData} 
+            logos={logos} 
+            onUpdateLogo={() => {}}
+            onRegenerateLogo={() => Promise.resolve()}
+            apiKey=""
+            isReadOnly={true}
+          />
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   // App View

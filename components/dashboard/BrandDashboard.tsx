@@ -18,10 +18,11 @@ interface BrandDashboardProps {
   onUpdateLogo?: (type: 'primary' | 'secondary', newImage: string) => void;
   onRegenerateLogo?: (type: 'primary' | 'secondary', feedback?: string) => Promise<void>;
   apiKey: string;
+  isReadOnly?: boolean;
 }
 
 
-const BrandDashboard: React.FC<BrandDashboardProps> = ({ data, logos, onUpdateLogo, onRegenerateLogo, apiKey }) => {
+const BrandDashboard: React.FC<BrandDashboardProps> = ({ data, logos, onUpdateLogo, onRegenerateLogo, apiKey, isReadOnly = false }) => {
   const dashboardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
@@ -238,18 +239,18 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
           title="The Sigil (Primary)"
           logo={logos.primary}
           logoType="primary"
-          onRefine={onUpdateLogo ? () => { setEditingTarget('primary'); setEditMode('refine'); } : undefined}
-          onRegenerate={onRegenerateLogo ? () => { setEditingTarget('primary'); setEditMode('regenerate'); } : undefined}
-          onRemoveBackground={handleRemoveBackground}
+          onRefine={!isReadOnly && onUpdateLogo ? () => { setEditingTarget('primary'); setEditMode('refine'); } : undefined}
+          onRegenerate={!isReadOnly && onRegenerateLogo ? () => { setEditingTarget('primary'); setEditMode('regenerate'); } : undefined}
+          onRemoveBackground={!isReadOnly ? handleRemoveBackground : undefined}
           isRemovingBg={isRemovingBg}
         />
         <LogoCard
           title="The Crest (Secondary)"
           logo={logos.secondary}
           logoType="secondary"
-          onRefine={onUpdateLogo ? () => { setEditingTarget('secondary'); setEditMode('refine'); } : undefined}
-          onRegenerate={onRegenerateLogo ? () => { setEditingTarget('secondary'); setEditMode('regenerate'); } : undefined}
-          onRemoveBackground={handleRemoveBackground}
+          onRefine={!isReadOnly && onUpdateLogo ? () => { setEditingTarget('secondary'); setEditMode('refine'); } : undefined}
+          onRegenerate={!isReadOnly && onRegenerateLogo ? () => { setEditingTarget('secondary'); setEditMode('regenerate'); } : undefined}
+          onRemoveBackground={!isReadOnly ? handleRemoveBackground : undefined}
           isRemovingBg={isRemovingBg}
         />
       </div>
@@ -258,7 +259,7 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
         variations={variations}
         hasPrimaryLogo={!!logos.primary}
         isGenerating={isGeneratingVariations}
-        onGenerateVariations={handleGenerateVariations}
+        onGenerateVariations={!isReadOnly ? handleGenerateVariations : undefined}
       />
 
       <TypographySection typography={data.typography} />

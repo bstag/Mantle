@@ -1,0 +1,65 @@
+{
+  "brandVoice": "Majestic, Authoritative, and Architecturally Elegant. The voice combines the precision of a senior software architect with the grandeur of a royal tailor. It speaks in metaphors of coronation, weaving, and nature, treating the act of branding not as 'designing' but as 'bestowing' an identity upon the code.",
+  "colors": [
+    {
+      "contrastInfo": "High contrast (15.5:1) against white surfaces. Compliant for all text sizes.",
+      "detailedUsage": "Use for primary headers, the main navigation bar in the 'Winter Mantle' (Dark Mode), and primary brand identifiers.",
+      "hex": "#2E1A47",
+      "name": "Imperial Velvet",
+      "usage": "Primary Brand Color"
+    },
+    {
+      "contrastInfo": "High contrast against dark backgrounds (10:1). Poor contrast on white; use black text over this color.",
+      "detailedUsage": "Use for primary call-to-action buttons (CTAs) in Dark Mode, active states, and icon highlights.",
+      "hex": "#D4AF37",
+      "name": "Gilded Antler",
+      "usage": "Accent/Action"
+    },
+    {
+      "contrastInfo": "Excellent contrast against light text (18:1).",
+      "detailedUsage": "The foundational background for the 'Winter Mantle'. Use for code editor backgrounds and terminal windows.",
+      "hex": "#0F1115",
+      "name": "Midnight Coat",
+      "usage": "Dark Background"
+    },
+    {
+      "contrastInfo": "High contrast against dark text (17:1).",
+      "detailedUsage": "The foundational background for the 'Summer Mantle'. Use for general spacing and layout in light mode.",
+      "hex": "#F4F6F8",
+      "name": "Morning Mist",
+      "usage": "Light Background"
+    },
+    {
+      "contrastInfo": "Mid-range contrast (4.5:1 against dark backgrounds).",
+      "detailedUsage": "Use for borders, dividers, and secondary text (metadata, timestamps) to represent the 'skeleton' beneath the mantle.",
+      "hex": "#8A9BB3",
+      "name": "Steel Fur",
+      "usage": "Neutral/Border"
+    }
+  ],
+  "tagline": "The Identity Layer for Stagware.",
+  "theme": {
+    "dark": {
+      "accent": "#D4AF37",
+      "background": "#0F1115",
+      "border": "#2E1A47",
+      "surface": "#1A1C23",
+      "textPrimary": "#F4F6F8",
+      "textSecondary": "#8A9BB3"
+    },
+    "light": {
+      "accent": "#2E1A47",
+      "background": "#F4F6F8",
+      "border": "#CBD2D9",
+      "surface": "#FFFFFF",
+      "textPrimary": "#0F1115",
+      "textSecondary": "#5E6C84"
+    }
+  },
+  "typography": {
+    "bodyFamily": "Inter",
+    "headerFamily": "Cinzel",
+    "reasoning": "We selected 'Cinzel' for headers to capture the 'Regal Authority' and 'Stagware' aesthetic; its classic proportions evoke Roman inscriptions and royal crests. This is paired with 'Inter' for the body, representing the raw, functional 'muscle' of the code beneath the coat—clean, legible, and familiar to developers."
+  },
+  "mission": "Product Name: Mantle\nTagline: The Identity Layer for Stagware.\nThe Concept\nMantle is an AI-powered brand identity engine designed for developers and founders who have built the \"muscle\" of their application (the code) but lack the \"coat\" to make it presentable. It moves beyond simple color pickers by generating a comprehensive, seasonally-aware \"Brand Bible\" based on a single mission statement.\nThe \"Stagware\" Philosophy\nMantle is built on a specific, cohesive metaphor that distinguishes it from generic design tools:\nThe Seasonal Hook: Just as a stag changes its coat for the season, modern applications must adapt to user preferences. Mantle doesn't just generate a palette; it generates a \"Winter Mantle\" (Dark Mode) and a \"Summer Mantle\" (Light Mode), ensuring the brand looks majestic in any environment.\nRegal Authority: The tool treats branding as an act of coronation. It creates \"Sigils\" (logos) and \"Crests\" (secondary marks) rather than just icons, instilling a sense of enterprise-grade authority.\nLayers: If the code is the skeleton and muscle, Mantle is the fabric draped over it—the Identity Layer."
+}

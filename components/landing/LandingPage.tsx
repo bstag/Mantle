@@ -1,15 +1,18 @@
 
 import React from 'react';
 import ThemeToggle from '../common/ThemeToggle';
+import ExampleGallery from '../examples/ExampleGallery';
+import { LoadedExample } from '../../services/exampleService';
 
 interface LandingPageProps {
   onEnter: () => void;
   onLearnMore: () => void;
+  onViewExample: (example: LoadedExample) => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onLearnMore, theme, onToggleTheme }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onLearnMore, onViewExample, theme, onToggleTheme }) => {
   return (
     <div className="min-h-screen bg-page text-main selection:bg-accent selection:text-on-accent transition-colors duration-300 flex flex-col">
       {/* Navigation */}
@@ -110,6 +113,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onLearnMore, theme, 
                         </p>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        {/* Example Gallery Section */}
+        <section id="examples" className="py-24 bg-page">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="text-center mb-12">
+                    <h2 className="text-3xl md:text-4xl font-bold font-serif text-main mb-4">
+                        Example Brand Packages
+                    </h2>
+                    <p className="text-lg text-muted max-w-2xl mx-auto">
+                        Explore pre-made brand identities to see what Mantle can create. No API key required.
+                    </p>
+                </div>
+                <ExampleGallery onViewExample={onViewExample} />
             </div>
         </section>
 

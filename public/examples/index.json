@@ -1,0 +1,10 @@
+{
+  "examples": [
+    {
+      "id": "mantle-brand",
+      "name": "Mantle",
+      "description": "A sample brand package demonstrating the full Mantle output structure. This site brand produced example",
+      "folder": "mantle-brand"
+    }
+  ]
+}
