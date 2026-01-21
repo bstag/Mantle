@@ -116,11 +116,53 @@ const MockUI: React.FC<{ theme: ThemeColors, title: string, logo?: string | null
   );
 };
 
+// Canvas Helper to remove background
+const processRemoveBackground = (base64Image: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = base64Image;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                reject("Canvas context not available");
+                return;
+            }
+            
+            ctx.drawImage(img, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            // Iterate and remove white pixels
+            // R, G, B, A
+            const threshold = 230; // Tolerance for "white"
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                
+                // If pixel is near white
+                if (r > threshold && g > threshold && b > threshold) {
+                    data[i + 3] = 0; // Set Alpha to 0
+                }
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = (e) => reject(e);
+    });
+};
+
 const BrandDashboard: React.FC<BrandDashboardProps> = ({ data, logos, onUpdateLogo, apiKey }) => {
   const dashboardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
   const [copiedCss, setCopiedCss] = useState(false);
+  const [copiedSvg, setCopiedSvg] = useState(false);
   
   // Local state for variations to allow generating them on demand
   const [variations, setVariations] = useState<LogoVariation[]>(logos.variations || []);
@@ -130,6 +172,7 @@ const BrandDashboard: React.FC<BrandDashboardProps> = ({ data, logos, onUpdateLo
   const [editingTarget, setEditingTarget] = useState<'primary' | 'secondary' | null>(null);
   const [editPrompt, setEditPrompt] = useState('');
   const [isRefining, setIsRefining] = useState(false);
+  const [isRemovingBg, setIsRemovingBg] = useState(false);
 
   // Sync prop changes if they happen upstream
   useEffect(() => {
@@ -266,7 +309,6 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
 
         // 2. Add Images (strip base64 prefix)
         const assets = zip.folder("sigils");
-        
         const stripBase64 = (dataUrl: string) => dataUrl.split(',')[1];
 
         if (logos.primary) {
@@ -274,6 +316,9 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
         }
         if (logos.secondary) {
             assets?.file("secondary-crest.png", stripBase64(logos.secondary), {base64: true});
+        }
+        if (logos.svg) {
+            assets?.file("favicon-vector.svg", logos.svg);
         }
         
         variations.forEach((v) => {
@@ -336,6 +381,13 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
       setTimeout(() => setCopiedCss(false), 2000);
   };
 
+  const handleCopySvg = () => {
+      if(!logos.svg) return;
+      navigator.clipboard.writeText(logos.svg);
+      setCopiedSvg(true);
+      setTimeout(() => setCopiedSvg(false), 2000);
+  };
+
   const handleRefineSubmit = async () => {
       if (!editingTarget || !editPrompt.trim()) return;
       
@@ -355,6 +407,21 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
           alert("Failed to reshape the sigil. Please try again.");
       } finally {
           setIsRefining(false);
+      }
+  };
+
+  const handleRemoveBackground = async (type: 'primary' | 'secondary') => {
+      const img = type === 'primary' ? logos.primary : logos.secondary;
+      if (!img || !onUpdateLogo) return;
+
+      setIsRemovingBg(true);
+      try {
+          const transparent = await processRemoveBackground(img);
+          onUpdateLogo(type, transparent);
+      } catch (e) {
+          console.error("Failed to remove background", e);
+      } finally {
+          setIsRemovingBg(false);
       }
   };
 
@@ -453,6 +520,7 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
 
       {/* Main Logos Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Primary Sigil Card */}
         <div className="bg-surface rounded-2xl p-6 border border-dim flex flex-col items-center backdrop-blur-sm relative group/card">
           <h3 className="text-muted mb-6 uppercase tracking-widest text-xs font-semibold">The Sigil (Primary)</h3>
           <div className="w-full aspect-square bg-page rounded-xl overflow-hidden flex items-center justify-center border border-dim shadow-inner relative group/image">
@@ -474,16 +542,32 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
              )}
           </div>
           {logos.primary && (
-            <button 
-                onClick={() => downloadImage(logos.primary!, 'Primary_Sigil.png')}
-                className="mt-4 px-4 py-2 bg-dim hover:bg-muted/20 text-main text-xs rounded-full opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center gap-2"
-            >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                Download PNG
-            </button>
+             <div className="flex items-center gap-2 mt-4">
+                <button 
+                    onClick={() => downloadImage(logos.primary!, 'Primary_Sigil.png')}
+                    className="px-4 py-2 bg-dim hover:bg-muted/20 text-main text-xs rounded-full transition-opacity flex items-center gap-2"
+                >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    PNG
+                </button>
+                <button 
+                    onClick={() => handleRemoveBackground('primary')}
+                    disabled={isRemovingBg}
+                    className="px-4 py-2 bg-dim hover:bg-muted/20 text-main text-xs rounded-full transition-opacity flex items-center gap-2"
+                    title="Make White Transparent (Magic Wand)"
+                >
+                    {isRemovingBg ? (
+                        <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    ) : (
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                    )}
+                    Remove BG
+                </button>
+             </div>
           )}
         </div>
         
+        {/* Secondary Crest Card */}
         <div className="bg-surface rounded-2xl p-6 border border-dim flex flex-col items-center backdrop-blur-sm relative group/card">
           <h3 className="text-muted mb-6 uppercase tracking-widest text-xs font-semibold">The Crest (Secondary)</h3>
           <div className="w-full aspect-square bg-page rounded-xl overflow-hidden flex items-center justify-center border border-dim shadow-inner relative group/image">
@@ -505,16 +589,59 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
              )}
           </div>
            {logos.secondary && (
-            <button 
-                onClick={() => downloadImage(logos.secondary!, 'Secondary_Crest.png')}
-                className="mt-4 px-4 py-2 bg-dim hover:bg-muted/20 text-main text-xs rounded-full opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center gap-2"
-            >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                Download PNG
-            </button>
+            <div className="flex items-center gap-2 mt-4">
+                <button 
+                    onClick={() => downloadImage(logos.secondary!, 'Secondary_Crest.png')}
+                    className="px-4 py-2 bg-dim hover:bg-muted/20 text-main text-xs rounded-full transition-opacity flex items-center gap-2"
+                >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    PNG
+                </button>
+                <button 
+                    onClick={() => handleRemoveBackground('secondary')}
+                    disabled={isRemovingBg}
+                    className="px-4 py-2 bg-dim hover:bg-muted/20 text-main text-xs rounded-full transition-opacity flex items-center gap-2"
+                    title="Make White Transparent"
+                >
+                    {isRemovingBg ? (
+                        <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    ) : (
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                    )}
+                    Remove BG
+                </button>
+             </div>
           )}
         </div>
       </div>
+
+      {/* Vector / SVG Section */}
+      {logos.svg && (
+        <div className="bg-surface rounded-2xl p-8 border border-dim backdrop-blur-sm flex flex-col md:flex-row gap-8 items-center">
+            <div className="flex-1 space-y-4">
+                 <h3 className="text-muted uppercase tracking-widest text-xs font-semibold border-b border-dim pb-4">Vector Favicon</h3>
+                 <p className="text-main/80 text-sm leading-relaxed">
+                     A scalable, code-based interpretation of your sigil. Perfect for favicons and web vectors.
+                 </p>
+                 <div className="flex gap-3">
+                     <button
+                        onClick={handleCopySvg}
+                        className="px-4 py-2 bg-dim hover:bg-muted/20 text-main text-xs rounded-lg transition-colors flex items-center gap-2"
+                     >
+                        {copiedSvg ? <span className="text-green-600">Copied!</span> : 'Copy SVG Code'}
+                     </button>
+                 </div>
+            </div>
+            
+            <div className="w-32 h-32 md:w-48 md:h-48 bg-page border border-dim rounded-xl flex items-center justify-center relative p-6">
+                {/* Render the raw SVG */}
+                <div 
+                    className="w-full h-full text-accent svg-preview" 
+                    dangerouslySetInnerHTML={{ __html: logos.svg }} 
+                />
+            </div>
+        </div>
+      )}
 
       {/* Logo Variations Section */}
       <div className="bg-surface rounded-2xl p-8 border border-dim backdrop-blur-sm">
@@ -546,12 +673,12 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
                         <div className="w-full aspect-square bg-page rounded-xl overflow-hidden flex items-center justify-center p-6 border border-dim relative">
                              <img src={variant.image} alt={variant.label} className="w-full h-full object-contain" />
                              
-                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/variant:opacity-100 transition-opacity flex items-center justify-center">
+                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/variant:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                  <button
                                      onClick={() => downloadImage(variant.image, `${variant.name}.png`)}
                                      className="bg-white text-black px-3 py-1.5 rounded-full text-xs font-semibold transform translate-y-2 group-hover/variant:translate-y-0 transition-all"
                                  >
-                                     Download
+                                     PNG
                                  </button>
                              </div>
                         </div>

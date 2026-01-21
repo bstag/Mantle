@@ -94,19 +94,20 @@ export const generateBrandIdentity = async (apiKey: string, mission: string): Pr
 };
 
 // 2. Image Generation: Logos
-export const generateLogos = async (apiKey: string, mission: string, size: ImageSize): Promise<{ primary: string | null, secondary: string | null, variations: LogoVariation[] }> => {
+export const generateLogos = async (apiKey: string, mission: string, size: ImageSize): Promise<{ primary: string | null, secondary: string | null, svg: string | null, variations: LogoVariation[] }> => {
   const ai = getAiClient(apiKey);
-  const model = 'gemini-3-pro-image-preview';
+  const imageModel = 'gemini-3-pro-image-preview';
+  const textModel = 'gemini-3-pro-preview';
 
-  // We will run two requests in parallel for efficiency
+  // We will run requests in parallel for efficiency
   
-  // Primary Logo Request
+  // Primary Logo Request (Ensure white background for easier removal later)
   const primaryPromise = ai.models.generateContent({
-    model,
+    model: imageModel,
     contents: {
       parts: [{ text: `Design a primary logo for a brand with this mission: ${mission}. 
       Style: Minimalist, Vector-like, Professional, Scalable. 
-      Do not include complex text. Focus on a strong symbol.` }]
+      Important: Isolate the logo on a solid white background. No photorealistic scenes. Flat design.` }]
     },
     config: {
       imageConfig: {
@@ -118,10 +119,11 @@ export const generateLogos = async (apiKey: string, mission: string, size: Image
 
   // Secondary Mark / Pattern Request
   const secondaryPromise = ai.models.generateContent({
-    model,
+    model: imageModel,
     contents: {
       parts: [{ text: `Design a secondary brand mark or icon pattern for a brand with this mission: ${mission}. 
-      Style: Abstract, Complementary to a main logo, Monoline or Solid shape.` }]
+      Style: Abstract, Complementary to a main logo, Monoline or Solid shape.
+      Important: Isolate on a solid white background.` }]
     },
     config: {
       imageConfig: {
@@ -131,7 +133,17 @@ export const generateLogos = async (apiKey: string, mission: string, size: Image
     }
   });
 
-  const [primaryRes, secondaryRes] = await Promise.all([primaryPromise, secondaryPromise]);
+  // SVG Generation Request (Code)
+  const svgPromise = ai.models.generateContent({
+      model: textModel,
+      contents: {
+          parts: [{ text: `Create a simple, geometric SVG code (vector) for a logo representing this mission: "${mission}".
+          Output ONLY the raw <svg>...</svg> code. Do not wrap in markdown blocks. 
+          Use a viewbox of 0 0 100 100. Use currentColor or specific hex codes provided in the identity.`}]
+      }
+  });
+
+  const [primaryRes, secondaryRes, svgRes] = await Promise.all([primaryPromise, secondaryPromise, svgPromise]);
 
   const extractImage = (res: any): string | null => {
     for (const part of res.candidates[0].content.parts) {
@@ -142,9 +154,17 @@ export const generateLogos = async (apiKey: string, mission: string, size: Image
     return null;
   };
 
+  // Clean SVG response
+  let svgCode = svgRes.text || null;
+  if (svgCode) {
+      // Remove markdown blocks if present despite instructions
+      svgCode = svgCode.replace(/```xml/g, '').replace(/```svg/g, '').replace(/```/g, '').trim();
+  }
+
   return {
     primary: extractImage(primaryRes),
     secondary: extractImage(secondaryRes),
+    svg: svgCode,
     variations: [] // Initialize empty, generated on demand
   };
 };
@@ -161,17 +181,17 @@ export const generateLogoVariations = async (apiKey: string, originalLogoBase64:
     {
       id: 'simplified',
       label: 'Simplified Icon',
-      text: 'Create a simplified, flat vector icon version of this logo. Minimalist, high contrast, suitable for a favicon or app icon. Remove small details.'
+      text: 'Create a simplified, flat vector icon version of this logo. Minimalist, high contrast, suitable for a favicon or app icon. Remove small details. Solid white background.'
     },
     {
       id: 'monochrome',
       label: 'Monochrome (B&W)',
-      text: 'Convert this logo into a strict black and white (ink stamp style) version. High contrast, no greyscale, solid shapes.'
+      text: 'Convert this logo into a strict black and white (ink stamp style) version. High contrast, no greyscale, solid shapes. Solid white background.'
     },
     {
       id: 'outline',
       label: 'Outline Version',
-      text: 'Create a line-art / outline version of this logo. Elegant strokes, white background.'
+      text: 'Create a line-art / outline version of this logo. Elegant strokes. Solid white background.'
     }
   ];
 
@@ -222,7 +242,7 @@ export const refineLogo = async (apiKey: string, currentImageBase64: string, ins
     contents: {
       parts: [
         { inlineData: { mimeType: 'image/png', data: base64Data } },
-        { text: `Modify this logo based on the following instruction: ${instruction}. Maintain the core identity but apply the requested change.` }
+        { text: `Modify this logo based on the following instruction: ${instruction}. Maintain the core identity but apply the requested change. Keep on a solid white background.` }
       ]
     },
     config: {
