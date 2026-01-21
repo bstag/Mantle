@@ -42,6 +42,38 @@ Part of the **Stagware** product suite, Mantle treats branding as a regal "coat"
     npm run dev
     ```
 
+## Deployment to Cloudflare Pages
+
+### Via Cloudflare Dashboard (Recommended)
+
+1.  **Push to Git**: Ensure your code is pushed to GitHub, GitLab, or Bitbucket.
+2.  **Connect to Cloudflare Pages**:
+    *   Log in to [Cloudflare Dashboard](https://dash.cloudflare.com/)
+    *   Navigate to **Pages** → **Create a project**
+    *   Connect your Git repository
+3.  **Configure Build Settings**:
+    *   **Build command**: `npm run build`
+    *   **Build output directory**: `dist`
+    *   **Node version**: `18` or higher
+4.  **Environment Variables**: Add `GEMINI_API_KEY` if needed (though this app uses BYOK, so it's optional)
+5.  **Deploy**: Click **Save and Deploy**
+
+### Via Wrangler CLI
+
+1.  **Install Wrangler**:
+    ```bash
+    npm install -g wrangler
+    ```
+2.  **Authenticate**:
+    ```bash
+    wrangler login
+    ```
+3.  **Build and Deploy**:
+    ```bash
+    npm run build
+    wrangler pages deploy dist --project-name=mantle
+    ```
+
 ## Usage
 
 1.  **Authenticate**: Upon loading the app, enter your Google Gemini API Key. You can get one for free at [Google AI Studio](https://aistudio.google.com/).
