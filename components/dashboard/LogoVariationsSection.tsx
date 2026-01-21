@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LogoVariation } from '../../types';
 import { downloadImage } from '../../utils/imageUtils';
+import { vectorizeAndDownload } from '../../utils/vectorUtils';
 
 interface LogoVariationsSectionProps {
   variations: LogoVariation[];
@@ -15,6 +16,19 @@ const LogoVariationsSection: React.FC<LogoVariationsSectionProps> = ({
   isGenerating,
   onGenerateVariations,
 }) => {
+  const [vectorizingIndex, setVectorizingIndex] = useState<number | null>(null);
+
+  const handleVectorize = async (image: string, name: string, index: number) => {
+    setVectorizingIndex(index);
+    try {
+      await vectorizeAndDownload(image, name);
+    } catch (error) {
+      console.error('Vectorization failed:', error);
+      alert('Failed to vectorize logo. Please try again.');
+    } finally {
+      setVectorizingIndex(null);
+    }
+  };
   return (
     <div className="bg-surface rounded-2xl p-8 border border-dim backdrop-blur-sm">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-dim pb-4">
@@ -54,6 +68,19 @@ const LogoVariationsSection: React.FC<LogoVariationsSectionProps> = ({
                     className="bg-white text-black px-3 py-1.5 rounded-full text-xs font-semibold transform translate-y-2 group-hover/variant:translate-y-0 transition-all"
                   >
                     PNG
+                  </button>
+                  <button
+                    onClick={() => handleVectorize(variant.image, variant.name, idx)}
+                    disabled={vectorizingIndex === idx}
+                    className="bg-accent text-on-accent px-3 py-1.5 rounded-full text-xs font-semibold transform translate-y-2 group-hover/variant:translate-y-0 transition-all disabled:opacity-50 flex items-center gap-1"
+                  >
+                    {vectorizingIndex === idx ? (
+                      <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : null}
+                    SVG
                   </button>
                 </div>
               </div>

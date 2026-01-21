@@ -9,8 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@csstools/postcss-oklab-function": "^5.0.0",
     "@google/genai": "^1.34.0",
-    "html2canvas": "1.4.1",
+    "html2canvas": "^1.4.1",
+    "imagetracerjs": "^1.2.6",
     "jspdf": "^4.0.0",
     "jszip": "3.10.1",
     "react": "^19.2.3",

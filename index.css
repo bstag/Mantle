@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+@layer base {
+  /* Force RGB color space for html2canvas compatibility */
+  * {
+    color-scheme: light dark;
+  }
+}
+
 :root {
   /* The Royal Script */
   --font-header: 'Cinzel', serif;
