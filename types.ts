@@ -45,7 +45,6 @@ export interface LogoVariation {
 export interface LogoResult {
   primary: string | null; // base64
   secondary: string | null; // base64
-  svg: string | null; // raw svg code
   variations: LogoVariation[];
 }
 

@@ -94,11 +94,10 @@ export const generateBrandIdentity = async (apiKey: string, mission: string): Pr
 };
 
 // 2. Image Generation: Logos
-export const generateLogos = async (apiKey: string, mission: string, size: ImageSize): Promise<{ primary: string | null, secondary: string | null, svg: string | null, variations: LogoVariation[] }> => {
+export const generateLogos = async (apiKey: string, mission: string, size: ImageSize): Promise<{ primary: string | null, secondary: string | null, variations: LogoVariation[] }> => {
   const ai = getAiClient(apiKey);
   const imageModel = 'gemini-3-pro-image-preview';
-  const textModel = 'gemini-3-pro-preview';
-
+  
   // We will run requests in parallel for efficiency
   
   // Primary Logo Request (Ensure white background for easier removal later)
@@ -133,17 +132,7 @@ export const generateLogos = async (apiKey: string, mission: string, size: Image
     }
   });
 
-  // SVG Generation Request (Code)
-  const svgPromise = ai.models.generateContent({
-      model: textModel,
-      contents: {
-          parts: [{ text: `Create a simple, geometric SVG code (vector) for a logo representing this mission: "${mission}".
-          Output ONLY the raw <svg>...</svg> code. Do not wrap in markdown blocks. 
-          Use a viewbox of 0 0 100 100. Use currentColor or specific hex codes provided in the identity.`}]
-      }
-  });
-
-  const [primaryRes, secondaryRes, svgRes] = await Promise.all([primaryPromise, secondaryPromise, svgPromise]);
+  const [primaryRes, secondaryRes] = await Promise.all([primaryPromise, secondaryPromise]);
 
   const extractImage = (res: any): string | null => {
     for (const part of res.candidates[0].content.parts) {
@@ -154,17 +143,9 @@ export const generateLogos = async (apiKey: string, mission: string, size: Image
     return null;
   };
 
-  // Clean SVG response
-  let svgCode = svgRes.text || null;
-  if (svgCode) {
-      // Remove markdown blocks if present despite instructions
-      svgCode = svgCode.replace(/```xml/g, '').replace(/```svg/g, '').replace(/```/g, '').trim();
-  }
-
   return {
     primary: extractImage(primaryRes),
     secondary: extractImage(secondaryRes),
-    svg: svgCode,
     variations: [] // Initialize empty, generated on demand
   };
 };
@@ -229,7 +210,7 @@ export const generateLogoVariations = async (apiKey: string, originalLogoBase64:
   return results.filter((r): r is LogoVariation => r !== null);
 };
 
-// 2c. Refine Existing Logo
+// 2c. Refine Existing Logo (Image-to-Image)
 export const refineLogo = async (apiKey: string, currentImageBase64: string, instruction: string): Promise<string | null> => {
   const ai = getAiClient(apiKey);
   const model = 'gemini-3-pro-image-preview'; // Use Pro for high quality editing
@@ -249,6 +230,40 @@ export const refineLogo = async (apiKey: string, currentImageBase64: string, ins
       imageConfig: {
         aspectRatio: "1:1",
         imageSize: "1K"
+      }
+    }
+  });
+
+  for (const part of response.candidates[0].content.parts) {
+    if (part.inlineData) {
+      return `data:image/png;base64,${part.inlineData.data}`;
+    }
+  }
+  return null;
+};
+
+// 2d. Regenerate Single Logo (Text-to-Image with feedback)
+export const regenerateSingleLogo = async (apiKey: string, mission: string, type: 'primary' | 'secondary', feedback?: string, size: ImageSize = '1K'): Promise<string | null> => {
+  const ai = getAiClient(apiKey);
+  const model = 'gemini-3-pro-image-preview';
+
+  let prompt = type === 'primary' 
+    ? `Design a primary logo for a brand with this mission: ${mission}. Style: Minimalist, Vector-like, Professional, Scalable. Important: Isolate on solid white background.`
+    : `Design a secondary brand mark or icon pattern for a brand with this mission: ${mission}. Style: Abstract, Complementary. Important: Isolate on solid white background.`;
+
+  if (feedback) {
+      prompt += ` \n\nIMPORTANT ADJUSTMENT: ${feedback}`;
+  }
+
+  const response = await ai.models.generateContent({
+    model,
+    contents: {
+      parts: [{ text: prompt }]
+    },
+    config: {
+      imageConfig: {
+        aspectRatio: "1:1",
+        imageSize: size
       }
     }
   });

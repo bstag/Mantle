@@ -2,11 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import GeneratorForm from './components/GeneratorForm';
 import BrandDashboard from './components/BrandDashboard';
-import ChatBot from './components/ChatBot';
 import ApiKeyModal from './components/ApiKeyModal';
 import LandingPage from './components/LandingPage';
 import FeaturesPage from './components/FeaturesPage';
-import { generateBrandIdentity, generateLogos } from './services/geminiService';
+import { generateBrandIdentity, generateLogos, regenerateSingleLogo } from './services/geminiService';
 import { BrandIdentity, ImageSize, LogoResult } from './types';
 
 type ViewState = 'landing' | 'features' | 'app';
@@ -16,7 +15,7 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('landing');
   const [isGenerating, setIsGenerating] = useState(false);
   const [brandData, setBrandData] = useState<BrandIdentity | null>(null);
-  const [logos, setLogos] = useState<LogoResult>({ primary: null, secondary: null, svg: null, variations: [] });
+  const [logos, setLogos] = useState<LogoResult>({ primary: null, secondary: null, variations: [] });
   const [error, setError] = useState<string | null>(null);
 
   // Load key from storage on mount
@@ -46,7 +45,7 @@ const App: React.FC = () => {
     setIsGenerating(true);
     setError(null);
     setBrandData(null);
-    setLogos({ primary: null, secondary: null, svg: null, variations: [] });
+    setLogos({ primary: null, secondary: null, variations: [] });
 
     try {
       // 1. Generate text first to give immediate feedback
@@ -74,6 +73,20 @@ const App: React.FC = () => {
           ...prev,
           [type]: newImage,
       }));
+  };
+
+  const handleRegenerateLogo = async (type: 'primary' | 'secondary', feedback?: string) => {
+      if (!apiKey || !brandData) return;
+      
+      try {
+          const newImage = await regenerateSingleLogo(apiKey, brandData.mission, type, feedback);
+          if (newImage) {
+            handleUpdateLogo(type, newImage);
+          }
+      } catch (e) {
+          console.error("Failed to regenerate", e);
+          alert("Failed to regenerate logo. Please try again.");
+      }
   };
 
   // View Routing
@@ -142,7 +155,15 @@ const App: React.FC = () => {
         {/* Results */}
         {(brandData || isGenerating) && (
             <div className={`transition-opacity duration-1000 ${brandData ? 'opacity-100' : 'opacity-0'}`}>
-                {brandData && apiKey && <BrandDashboard data={brandData} logos={logos} onUpdateLogo={handleUpdateLogo} apiKey={apiKey} />}
+                {brandData && apiKey && 
+                  <BrandDashboard 
+                    data={brandData} 
+                    logos={logos} 
+                    onUpdateLogo={handleUpdateLogo} 
+                    onRegenerateLogo={handleRegenerateLogo}
+                    apiKey={apiKey} 
+                  />
+                }
             </div>
         )}
 
@@ -154,9 +175,6 @@ const App: React.FC = () => {
             &copy; {new Date().getFullYear()} Stagware. The Mantle Identity Layer.
         </div>
       </footer>
-
-      {/* Chat Widget */}
-      {apiKey && <ChatBot brandData={brandData || undefined} apiKey={apiKey} />}
 
     </div>
   );

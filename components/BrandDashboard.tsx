@@ -10,6 +10,7 @@ interface BrandDashboardProps {
   data: BrandIdentity;
   logos: LogoResult;
   onUpdateLogo?: (type: 'primary' | 'secondary', newImage: string) => void;
+  onRegenerateLogo?: (type: 'primary' | 'secondary', feedback?: string) => Promise<void>;
   apiKey: string;
 }
 
@@ -157,12 +158,11 @@ const processRemoveBackground = (base64Image: string): Promise<string> => {
     });
 };
 
-const BrandDashboard: React.FC<BrandDashboardProps> = ({ data, logos, onUpdateLogo, apiKey }) => {
+const BrandDashboard: React.FC<BrandDashboardProps> = ({ data, logos, onUpdateLogo, onRegenerateLogo, apiKey }) => {
   const dashboardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
   const [copiedCss, setCopiedCss] = useState(false);
-  const [copiedSvg, setCopiedSvg] = useState(false);
   
   // Local state for variations to allow generating them on demand
   const [variations, setVariations] = useState<LogoVariation[]>(logos.variations || []);
@@ -170,8 +170,9 @@ const BrandDashboard: React.FC<BrandDashboardProps> = ({ data, logos, onUpdateLo
 
   // Modification State
   const [editingTarget, setEditingTarget] = useState<'primary' | 'secondary' | null>(null);
+  const [editMode, setEditMode] = useState<'refine' | 'regenerate' | null>(null);
   const [editPrompt, setEditPrompt] = useState('');
-  const [isRefining, setIsRefining] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isRemovingBg, setIsRemovingBg] = useState(false);
 
   // Sync prop changes if they happen upstream
@@ -317,9 +318,6 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
         if (logos.secondary) {
             assets?.file("secondary-crest.png", stripBase64(logos.secondary), {base64: true});
         }
-        if (logos.svg) {
-            assets?.file("favicon-vector.svg", logos.svg);
-        }
         
         variations.forEach((v) => {
             assets?.file(`variation-${v.name}.png`, stripBase64(v.image), {base64: true});
@@ -381,32 +379,38 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
       setTimeout(() => setCopiedCss(false), 2000);
   };
 
-  const handleCopySvg = () => {
-      if(!logos.svg) return;
-      navigator.clipboard.writeText(logos.svg);
-      setCopiedSvg(true);
-      setTimeout(() => setCopiedSvg(false), 2000);
-  };
-
-  const handleRefineSubmit = async () => {
-      if (!editingTarget || !editPrompt.trim()) return;
+  const handleSubmitModification = async () => {
+      if (!editingTarget) return;
       
-      const currentImage = editingTarget === 'primary' ? logos.primary : logos.secondary;
-      if (!currentImage) return;
-
-      setIsRefining(true);
+      setIsProcessing(true);
       try {
-          const refinedImage = await refineLogo(apiKey, currentImage, editPrompt);
-          if (refinedImage && onUpdateLogo) {
-              onUpdateLogo(editingTarget, refinedImage);
-              setEditingTarget(null);
-              setEditPrompt('');
+          if (editMode === 'refine') {
+              // Image-to-Image Refinement
+              const currentImage = editingTarget === 'primary' ? logos.primary : logos.secondary;
+              if (!currentImage) return;
+
+              const refinedImage = await refineLogo(apiKey, currentImage, editPrompt);
+              if (refinedImage && onUpdateLogo) {
+                  onUpdateLogo(editingTarget, refinedImage);
+                  setEditingTarget(null);
+                  setEditMode(null);
+                  setEditPrompt('');
+              }
+
+          } else if (editMode === 'regenerate') {
+              // Text-to-Image Regeneration
+              if (onRegenerateLogo) {
+                  await onRegenerateLogo(editingTarget, editPrompt);
+                  setEditingTarget(null);
+                  setEditMode(null);
+                  setEditPrompt('');
+              }
           }
       } catch (error) {
-          console.error("Refinement failed:", error);
-          alert("Failed to reshape the sigil. Please try again.");
+          console.error("Modification failed:", error);
+          alert("Failed to modify the sigil. Please try again.");
       } finally {
-          setIsRefining(false);
+          setIsProcessing(false);
       }
   };
 
@@ -429,40 +433,46 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
     <div ref={dashboardRef} className="w-full max-w-6xl mx-auto space-y-12 animate-fade-in pb-20 relative p-8 md:p-12 bg-surface/50 rounded-3xl border border-dim shadow-2xl transition-colors duration-300">
       
       {/* Modification Modal */}
-      {editingTarget && (
+      {editingTarget && editMode && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-page/80 backdrop-blur-sm p-4 animate-fade-in">
               <div className="bg-surface border border-dim p-8 rounded-2xl w-full max-w-md shadow-2xl relative">
-                  <h3 className="text-xl font-bold text-main mb-2 font-serif">Reshape Sigil</h3>
-                  <p className="text-muted text-sm mb-6">Describe how the Mantle should be altered. The threads will be re-woven.</p>
+                  <h3 className="text-xl font-bold text-main mb-2 font-serif">
+                      {editMode === 'refine' ? 'Reshape Sigil' : 'Regenerate Sigil'}
+                  </h3>
+                  <p className="text-muted text-sm mb-6">
+                      {editMode === 'refine' 
+                        ? 'Describe how the current Mantle should be altered.' 
+                        : 'Feedback for the new iteration (optional). Leave empty for a fresh attempt.'}
+                  </p>
                   
                   <textarea 
                     value={editPrompt}
                     onChange={(e) => setEditPrompt(e.target.value)}
-                    placeholder="E.g., Make it blue, add a crown, remove the circle..."
+                    placeholder={editMode === 'refine' ? "E.g., Make it blue, add a crown..." : "E.g., Make it more abstract, less detailed..."}
                     className="w-full bg-page border border-dim rounded-lg p-3 text-main placeholder-muted focus:ring-2 focus:ring-accent outline-none resize-none h-32 mb-6"
                     autoFocus
                   />
                   
                   <div className="flex gap-4">
                       <button 
-                        onClick={() => { setEditingTarget(null); setEditPrompt(''); }}
-                        disabled={isRefining}
+                        onClick={() => { setEditingTarget(null); setEditMode(null); setEditPrompt(''); }}
+                        disabled={isProcessing}
                         className="flex-1 py-2 rounded-lg border border-dim text-muted hover:bg-page transition-colors text-sm font-medium"
                       >
                           Cancel
                       </button>
                       <button 
-                        onClick={handleRefineSubmit}
-                        disabled={isRefining || !editPrompt.trim()}
+                        onClick={handleSubmitModification}
+                        disabled={isProcessing || (editMode === 'refine' && !editPrompt.trim())}
                         className="flex-1 py-2 rounded-lg bg-accent text-on-accent hover:opacity-90 transition-colors text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                          {isRefining ? (
+                          {isProcessing ? (
                               <>
                                 <svg className="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                Reshaping...
+                                Weaving...
                               </>
                           ) : (
-                              'Weave Changes'
+                              editMode === 'refine' ? 'Reshape' : 'Regenerate'
                           )}
                       </button>
                   </div>
@@ -527,15 +537,26 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
              {logos.primary ? (
                <>
                 <img src={logos.primary} alt="Primary Sigil" className="w-full h-full object-contain p-8 group-hover/image:scale-105 transition-transform duration-500" />
-                {onUpdateLogo && (
-                  <button 
-                    onClick={() => setEditingTarget('primary')}
-                    className="reshape-btn absolute top-3 right-3 bg-accent/90 hover:bg-accent text-on-accent p-2 rounded-full opacity-0 group-hover/card:opacity-100 transition-opacity shadow-lg"
-                    title="Reshape Sigil"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                  </button>
-                )}
+                <div className="absolute top-3 right-3 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover/card:opacity-100 transition-opacity">
+                    {onUpdateLogo && (
+                    <button 
+                        onClick={() => { setEditingTarget('primary'); setEditMode('refine'); }}
+                        className="reshape-btn bg-accent/90 hover:bg-accent text-on-accent p-2 rounded-full shadow-lg"
+                        title="Refine (Edit Existing)"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    </button>
+                    )}
+                    {onRegenerateLogo && (
+                    <button 
+                        onClick={() => { setEditingTarget('primary'); setEditMode('regenerate'); }}
+                        className="reshape-btn bg-dim hover:bg-muted text-main p-2 rounded-full shadow-lg border border-muted/20"
+                        title="Regenerate (Create New)"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    </button>
+                    )}
+                </div>
                </>
              ) : (
                <div className="text-muted font-mono text-sm animate-pulse">Forging Sigil...</div>
@@ -574,15 +595,26 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
             {logos.secondary ? (
                <>
                 <img src={logos.secondary} alt="Secondary Crest" className="w-full h-full object-contain p-12 group-hover/image:scale-105 transition-transform duration-500" />
-                {onUpdateLogo && (
-                  <button 
-                    onClick={() => setEditingTarget('secondary')}
-                    className="reshape-btn absolute top-3 right-3 bg-accent/90 hover:bg-accent text-on-accent p-2 rounded-full opacity-0 group-hover/card:opacity-100 transition-opacity shadow-lg"
-                    title="Reshape Crest"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                  </button>
-                )}
+                <div className="absolute top-3 right-3 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover/card:opacity-100 transition-opacity">
+                    {onUpdateLogo && (
+                    <button 
+                        onClick={() => { setEditingTarget('secondary'); setEditMode('refine'); }}
+                        className="reshape-btn bg-accent/90 hover:bg-accent text-on-accent p-2 rounded-full shadow-lg"
+                        title="Refine (Edit Existing)"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    </button>
+                    )}
+                    {onRegenerateLogo && (
+                    <button 
+                        onClick={() => { setEditingTarget('secondary'); setEditMode('regenerate'); }}
+                        className="reshape-btn bg-dim hover:bg-muted text-main p-2 rounded-full shadow-lg border border-muted/20"
+                        title="Regenerate (Create New)"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    </button>
+                    )}
+                </div>
                </>
              ) : (
                 <div className="text-muted font-mono text-sm animate-pulse">Forging Crest...</div>
@@ -614,34 +646,6 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
           )}
         </div>
       </div>
-
-      {/* Vector / SVG Section */}
-      {logos.svg && (
-        <div className="bg-surface rounded-2xl p-8 border border-dim backdrop-blur-sm flex flex-col md:flex-row gap-8 items-center">
-            <div className="flex-1 space-y-4">
-                 <h3 className="text-muted uppercase tracking-widest text-xs font-semibold border-b border-dim pb-4">Vector Favicon</h3>
-                 <p className="text-main/80 text-sm leading-relaxed">
-                     A scalable, code-based interpretation of your sigil. Perfect for favicons and web vectors.
-                 </p>
-                 <div className="flex gap-3">
-                     <button
-                        onClick={handleCopySvg}
-                        className="px-4 py-2 bg-dim hover:bg-muted/20 text-main text-xs rounded-lg transition-colors flex items-center gap-2"
-                     >
-                        {copiedSvg ? <span className="text-green-600">Copied!</span> : 'Copy SVG Code'}
-                     </button>
-                 </div>
-            </div>
-            
-            <div className="w-32 h-32 md:w-48 md:h-48 bg-page border border-dim rounded-xl flex items-center justify-center relative p-6">
-                {/* Render the raw SVG */}
-                <div 
-                    className="w-full h-full text-accent svg-preview" 
-                    dangerouslySetInnerHTML={{ __html: logos.svg }} 
-                />
-            </div>
-        </div>
-      )}
 
       {/* Logo Variations Section */}
       <div className="bg-surface rounded-2xl p-8 border border-dim backdrop-blur-sm">
