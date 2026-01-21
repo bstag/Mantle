@@ -4,14 +4,16 @@ import GeneratorForm from './components/GeneratorForm';
 import BrandDashboard from './components/BrandDashboard';
 import ChatBot from './components/ChatBot';
 import ApiKeyModal from './components/ApiKeyModal';
+import LandingPage from './components/LandingPage';
 import { generateBrandIdentity, generateLogos } from './services/geminiService';
 import { BrandIdentity, ImageSize, LogoResult } from './types';
 
 const App: React.FC = () => {
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [showLanding, setShowLanding] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [brandData, setBrandData] = useState<BrandIdentity | null>(null);
-  const [logos, setLogos] = useState<LogoResult>({ primary: null, secondary: null, variations: [] });
+  const [logos, setLogos] = useState<LogoResult>({ primary: null, secondary: null, svg: null, variations: [] });
   const [error, setError] = useState<string | null>(null);
 
   // Load key from storage on mount
@@ -19,6 +21,7 @@ const App: React.FC = () => {
     const storedKey = localStorage.getItem('gemini_api_key');
     if (storedKey) {
       setApiKey(storedKey);
+      setShowLanding(false); // Skip landing if user has been here before
     }
   }, []);
 
@@ -31,6 +34,7 @@ const App: React.FC = () => {
       localStorage.removeItem('gemini_api_key');
       setApiKey(null);
       setBrandData(null);
+      setShowLanding(true); // Go back to landing page on logout
   }
 
   const handleGenerate = async (mission: string, size: ImageSize) => {
@@ -39,7 +43,7 @@ const App: React.FC = () => {
     setIsGenerating(true);
     setError(null);
     setBrandData(null);
-    setLogos({ primary: null, secondary: null, variations: [] });
+    setLogos({ primary: null, secondary: null, svg: null, variations: [] });
 
     try {
       // 1. Generate text first to give immediate feedback
@@ -68,6 +72,11 @@ const App: React.FC = () => {
           [type]: newImage,
       }));
   };
+
+  // Render Landing Page if active and no API key is pre-loaded
+  if (showLanding && !apiKey) {
+      return <LandingPage onEnter={() => setShowLanding(false)} />;
+  }
 
   return (
     <div className="min-h-screen bg-page text-main selection:bg-accent selection:text-on-accent transition-colors duration-300">
