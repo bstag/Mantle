@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { BrandIdentity, LogoResult, LogoVariation } from '../../types';
-import { generateLogoVariations, refineLogo } from '../../services/geminiService';
+import { BrandIdentity, LogoResult } from '../../types';
+import { LogoKind } from '../../modules/brand-studio/BrandStudio';
 import { generateBrandPdf, generateBrandPackageZip } from '../../services/exportService';
 import LogoCard from './LogoCard';
 import LogoVariationsSection from './LogoVariationsSection';
@@ -15,20 +15,27 @@ import { processRemoveBackground } from '../../utils/imageUtils';
 interface BrandDashboardProps {
   data: BrandIdentity;
   logos: LogoResult;
-  onUpdateLogo?: (type: 'primary' | 'secondary', newImage: string) => void;
-  onRegenerateLogo?: (type: 'primary' | 'secondary', feedback?: string) => Promise<void>;
-  apiKey: string;
+  onUpdateLogo?: (type: LogoKind, newImage: string) => void;
+  onRegenerateLogo?: (type: LogoKind, feedback?: string) => Promise<void>;
+  onRefineLogo?: (type: LogoKind, instruction: string) => Promise<void>;
+  onGenerateVariations?: () => Promise<void>;
   isReadOnly?: boolean;
 }
 
 
-const BrandDashboard: React.FC<BrandDashboardProps> = ({ data, logos, onUpdateLogo, onRegenerateLogo, apiKey, isReadOnly = false }) => {
+const BrandDashboard: React.FC<BrandDashboardProps> = ({
+  data,
+  logos,
+  onUpdateLogo,
+  onRegenerateLogo,
+  onRefineLogo,
+  onGenerateVariations,
+  isReadOnly = false,
+}) => {
   const dashboardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
   
-  // Local state for variations to allow generating them on demand
-  const [variations, setVariations] = useState<LogoVariation[]>(logos.variations || []);
   const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
 
   // Modification State
@@ -39,15 +46,6 @@ const BrandDashboard: React.FC<BrandDashboardProps> = ({ data, logos, onUpdateLo
   const [isRemovingBg, setIsRemovingBg] = useState(false);
   const MAX_EDIT_PROMPT_LENGTH = 1000;
 
-  // Sync prop changes if they happen upstream
-  useEffect(() => {
-    if (logos.variations && logos.variations.length > 0) {
-        setVariations(logos.variations);
-    } else {
-        // Reset if primary logo changes and no variations exist yet
-        setVariations([]);
-    }
-  }, [logos.primary, logos.variations]);
 
   // Dynamically load Google Fonts
   useEffect(() => {
@@ -124,7 +122,7 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
   const handleDownloadZip = async () => {
     setIsZipping(true);
     try {
-      await generateBrandPackageZip(data, logos, variations, cssSnippet);
+      await generateBrandPackageZip(data, logos, logos.variations, cssSnippet);
     } catch (e) {
       console.error("Failed to generate ZIP", e);
       alert("Could not generate zip package.");
@@ -135,11 +133,10 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
 
 
   const handleGenerateVariations = async () => {
-      if (!logos.primary) return;
+      if (!logos.primary || !onGenerateVariations) return;
       setIsGeneratingVariations(true);
       try {
-          const newVariations = await generateLogoVariations(apiKey, logos.primary);
-          setVariations(newVariations);
+          await onGenerateVariations();
       } catch (e) {
           console.error("Failed to generate variations", e);
       } finally {
@@ -154,18 +151,12 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
       setIsProcessing(true);
       try {
           if (editMode === 'refine') {
-              // Image-to-Image Refinement
-              const currentImage = editingTarget === 'primary' ? logos.primary : logos.secondary;
-              if (!currentImage) return;
-
-              const refinedImage = await refineLogo(apiKey, currentImage, editPrompt);
-              if (refinedImage && onUpdateLogo) {
-                  onUpdateLogo(editingTarget, refinedImage);
+              if (onRefineLogo) {
+                  await onRefineLogo(editingTarget, editPrompt);
                   setEditingTarget(null);
                   setEditMode(null);
                   setEditPrompt('');
               }
-
           } else if (editMode === 'regenerate') {
               // Text-to-Image Regeneration
               if (onRegenerateLogo) {
@@ -239,7 +230,7 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
           title="The Sigil (Primary)"
           logo={logos.primary}
           logoType="primary"
-          onRefine={!isReadOnly && onUpdateLogo ? () => { setEditingTarget('primary'); setEditMode('refine'); } : undefined}
+          onRefine={!isReadOnly && onRefineLogo ? () => { setEditingTarget('primary'); setEditMode('refine'); } : undefined}
           onRegenerate={!isReadOnly && onRegenerateLogo ? () => { setEditingTarget('primary'); setEditMode('regenerate'); } : undefined}
           onRemoveBackground={!isReadOnly ? handleRemoveBackground : undefined}
           isRemovingBg={isRemovingBg}
@@ -248,7 +239,7 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
           title="The Crest (Secondary)"
           logo={logos.secondary}
           logoType="secondary"
-          onRefine={!isReadOnly && onUpdateLogo ? () => { setEditingTarget('secondary'); setEditMode('refine'); } : undefined}
+          onRefine={!isReadOnly && onRefineLogo ? () => { setEditingTarget('secondary'); setEditMode('refine'); } : undefined}
           onRegenerate={!isReadOnly && onRegenerateLogo ? () => { setEditingTarget('secondary'); setEditMode('regenerate'); } : undefined}
           onRemoveBackground={!isReadOnly ? handleRemoveBackground : undefined}
           isRemovingBg={isRemovingBg}
@@ -256,10 +247,10 @@ ${data.colors.map(c => `  --color-${toKebab(c.name)}: ${c.hex};`).join('\n')}
       </div>
 
       <LogoVariationsSection
-        variations={variations}
+        variations={logos.variations}
         hasPrimaryLogo={!!logos.primary}
         isGenerating={isGeneratingVariations}
-        onGenerateVariations={!isReadOnly ? handleGenerateVariations : undefined}
+        onGenerateVariations={!isReadOnly && onGenerateVariations ? handleGenerateVariations : undefined}
       />
 
       <TypographySection typography={data.typography} />

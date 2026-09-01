@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ImageSize } from '../types';
+import { ImageSize } from '../../types';
 
 interface GeneratorFormProps {
   onGenerate: (mission: string, size: ImageSize) => void;

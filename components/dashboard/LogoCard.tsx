@@ -8,7 +8,7 @@ interface LogoCardProps {
   logoType: 'primary' | 'secondary';
   onRefine?: () => void;
   onRegenerate?: () => void;
-  onRemoveBackground: (type: 'primary' | 'secondary') => void;
+  onRemoveBackground?: (type: 'primary' | 'secondary') => void;
   isRemovingBg: boolean;
 }
 
@@ -105,6 +105,7 @@ const LogoCard: React.FC<LogoCardProps> = ({
             )}
             SVG
           </button>
+          {onRemoveBackground && (
           <button 
             onClick={() => onRemoveBackground(logoType)}
             disabled={isRemovingBg}
@@ -123,6 +124,7 @@ const LogoCard: React.FC<LogoCardProps> = ({
             )}
             Remove BG
           </button>
+          )}
         </div>
       )}
     </div>

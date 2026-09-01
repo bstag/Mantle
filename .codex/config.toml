@@ -1,0 +1,13 @@
+[mcp_servers.stagware_cms]
+url = "https://stagware.com/_emdash/api/mcp"
+bearer_token_env_var = "STAGWARE_EMDASH_MANTLE_TOKEN"
+enabled_tools = [
+  "schema_get_collection",
+  "content_get",
+  "content_update",
+  "content_compare",
+  "revision_list",
+  "media_list",
+  "media_get",
+]
+default_tools_approval_mode = "writes"

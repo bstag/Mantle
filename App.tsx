@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import GeneratorForm from './components/app/GeneratorForm';
 import BrandDashboard from './components/dashboard/BrandDashboard';
 import ApiKeyModal from './components/app/ApiKeyModal';
@@ -8,9 +8,10 @@ import FeaturesPage from './components/features/FeaturesPage';
 import Navbar from './components/app/Navbar';
 import Hero from './components/landing/Hero';
 import Footer from './components/common/Footer';
-import { generateBrandIdentity, generateLogos, regenerateSingleLogo } from './services/geminiService';
 import { LoadedExample } from './services/exampleService';
 import { BrandIdentity, ImageSize, LogoResult } from './types';
+import { BrandStudioError, LogoKind } from './modules/brand-studio/BrandStudio';
+import { createGeminiBrandStudio } from './modules/brand-studio/geminiBrandStudio';
 
 type ViewState = 'landing' | 'features' | 'app' | 'example-preview';
 
@@ -23,6 +24,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isExampleMode, setIsExampleMode] = useState(false);
+  const brandStudio = useMemo(() => apiKey ? createGeminiBrandStudio(apiKey) : null, [apiKey]);
 
   // Load key and theme from storage on mount
   useEffect(() => {
@@ -61,7 +63,7 @@ const App: React.FC = () => {
   }
 
   const handleGenerate = async (mission: string, size: ImageSize) => {
-    if (!apiKey) return;
+    if (!brandStudio) return;
 
     setIsGenerating(true);
     setError(null);
@@ -69,45 +71,49 @@ const App: React.FC = () => {
     setLogos({ primary: null, secondary: null, variations: [] });
 
     try {
-      // 1. Generate text first to give immediate feedback
-      const identity = await generateBrandIdentity(apiKey, mission);
-      setBrandData(identity);
-
-      // 2. Generate images in background/parallel
-      const generatedLogos = await generateLogos(apiKey, mission, size);
-      setLogos(generatedLogos);
-
-    } catch (err: any) {
+      const draft = await brandStudio.generateBrand({ mission, imageSize: size });
+      setBrandData(draft.identity);
+      setLogos(draft.logos);
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || "An unexpected error occurred while generating your brand.");
-      // Check for auth errors
-      if (err.message && (err.message.includes("401") || err.message.includes("API key"))) {
-          setError("Invalid API Key. Please check your key.");
-      }
+      setError(toUserMessage(err));
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleUpdateLogo = (type: 'primary' | 'secondary', newImage: string) => {
+  const handleUpdateLogo = (type: LogoKind, newImage: string) => {
       setLogos(prev => ({
           ...prev,
           [type]: newImage,
       }));
   };
 
-  const handleRegenerateLogo = async (type: 'primary' | 'secondary', feedback?: string) => {
-      if (!apiKey || !brandData) return;
-      
-      try {
-          const newImage = await regenerateSingleLogo(apiKey, brandData.mission, type, feedback);
-          if (newImage) {
-            handleUpdateLogo(type, newImage);
-          }
-      } catch (e) {
-          console.error("Failed to regenerate", e);
-          alert("Failed to regenerate logo. Please try again.");
-      }
+  const handleRegenerateLogo = async (type: LogoKind, feedback?: string) => {
+    if (!brandStudio || !brandData) return;
+
+    try {
+      const newImage = await brandStudio.regenerateLogo({ mission: brandData.mission, kind: type, feedback });
+      handleUpdateLogo(type, newImage);
+    } catch (error) {
+      console.error('Failed to regenerate', error);
+      alert(toUserMessage(error));
+    }
+  };
+
+  const handleRefineLogo = async (type: LogoKind, instruction: string) => {
+    if (!brandStudio) return;
+    const image = logos[type];
+    if (!image) return;
+
+    const refinedImage = await brandStudio.refineLogo({ image, instruction });
+    handleUpdateLogo(type, refinedImage);
+  };
+
+  const handleGenerateVariations = async () => {
+    if (!brandStudio || !logos.primary) return;
+    const variations = await brandStudio.generateVariations(logos.primary);
+    setLogos(previous => ({ ...previous, variations }));
   };
 
   const handleViewExample = (example: LoadedExample) => {
@@ -166,9 +172,6 @@ const App: React.FC = () => {
           <BrandDashboard 
             data={brandData} 
             logos={logos} 
-            onUpdateLogo={() => {}}
-            onRegenerateLogo={() => Promise.resolve()}
-            apiKey=""
             isReadOnly={true}
           />
         </main>
@@ -218,7 +221,8 @@ const App: React.FC = () => {
                     logos={logos} 
                     onUpdateLogo={handleUpdateLogo} 
                     onRegenerateLogo={handleRegenerateLogo}
-                    apiKey={apiKey} 
+                    onRefineLogo={handleRefineLogo}
+                    onGenerateVariations={handleGenerateVariations}
                   />
                 }
             </div>
@@ -233,3 +237,10 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+function toUserMessage(error: unknown): string {
+  if (error instanceof BrandStudioError) return error.message;
+  return error instanceof Error
+    ? error.message
+    : 'An unexpected error occurred while generating your brand.';
+}

@@ -26,7 +26,6 @@ Components for the main application view:
 - `GeneratorForm.tsx` - Brand generation form
 - `Navbar.tsx` - Main app navigation bar
 - `ApiKeyModal.tsx` - API key input modal
-- `ChatBot.tsx` - Chat interface (unused currently)
 
 ### `/dashboard`
 Components for the brand dashboard (results page):
@@ -47,4 +46,4 @@ When importing components:
 - From same folder: `import Component from './Component'`
 - From sibling folder: `import Component from '../folder/Component'`
 - From common: `import Component from '../common/Component'`
-- Types/utils: `import { Type } from '../types'` or `import { util } from '../utils/utilFile'`
+- Root types/utils from a feature folder: `import { Type } from '../../types'` or `import { util } from '../../utils/utilFile'`

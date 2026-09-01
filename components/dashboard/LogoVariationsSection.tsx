@@ -7,7 +7,7 @@ interface LogoVariationsSectionProps {
   variations: LogoVariation[];
   hasPrimaryLogo: boolean;
   isGenerating: boolean;
-  onGenerateVariations: () => void;
+  onGenerateVariations?: () => void;
 }
 
 const LogoVariationsSection: React.FC<LogoVariationsSectionProps> = ({
@@ -33,7 +33,7 @@ const LogoVariationsSection: React.FC<LogoVariationsSectionProps> = ({
     <div className="bg-surface rounded-2xl p-8 border border-dim backdrop-blur-sm">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-dim pb-4">
         <h3 className="text-muted uppercase tracking-widest text-xs font-semibold">Sigil Variations</h3>
-        {variations.length === 0 && hasPrimaryLogo && (
+        {variations.length === 0 && hasPrimaryLogo && onGenerateVariations && (
           <button
             id="generate-variations-btn"
             onClick={onGenerateVariations}
